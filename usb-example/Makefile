@@ -38,6 +38,10 @@ else
 LDFLAGS += -Wl,--print-gc-sections
 endif
 
+.SUFFIXES: .elf .bin .hex .srec .list .images
+.SECONDEXPANSION:
+.SECONDARY:
+
 all: images
 
 images: $(BINARY).images
