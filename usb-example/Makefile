@@ -6,7 +6,7 @@
 
 BINARY          = cdcacm
 
-LDSCRIPT        = stm32f4-discovery.ld
+LDSCRIPT        = ../stm32f4-discovery.ld
 
 PREFIX	       ?= arm-none-eabi
 # PREFIX         ?= arm-elf
@@ -16,6 +16,8 @@ OBJCOPY         = $(PREFIX)-objcopy
 OBJDUMP         = $(PREFIX)-objdump
 GDB             = $(PREFIX)-gdb
 FLASH           = $(shell which st-flash)
+UTIL            = $(shell which st-util)
+SUDO            = $(shell which sudo)
 
 TOOLCHAIN_DIR   ?= /usr/arm-none-eabi
 LIBOPENCM3_DIR  ?= ../libopencm3
@@ -45,7 +47,7 @@ endif
 all: images
 
 images: $(BINARY).images
-flash: $(BINARY).flash
+flash: $(BINARY).stlink-flash
 
 %.images: %.bin %.hex %.srec %.list
 	@echo "*** $* images generated ***"
@@ -82,5 +84,9 @@ clean:
 	$(Q)rm -f *.hex
 	$(Q)rm -f *.srec
 	$(Q)rm -f *.list
+	
+%.stlink-flash: %.bin
+	@printf "  FLASH   $<\n"
+	$(Q)$(SUDO) $(FLASH) write $(*).bin 0x8000000
 	
 	
