@@ -201,7 +201,7 @@ static void cdcacm_data_rx_cb(usbd_device *usbd_dev, u8 ep)
 			;
 	}
 
-	gpio_toggle(GPIOC, GPIO5);
+	gpio_toggle(GPIOD, GPIO12);
 }
 
 static void cdcacm_set_config(usbd_device *usbd_dev, u16 wValue)
@@ -225,12 +225,17 @@ int main(void)
 
 	rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_120MHZ]);
 
+        rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPDEN);
 	rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPAEN);
 	rcc_peripheral_enable_clock(&RCC_AHB2ENR, RCC_AHB2ENR_OTGFSEN);
 
 	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE,
 			GPIO9 | GPIO11 | GPIO12);
 	gpio_set_af(GPIOA, GPIO_AF10, GPIO9 | GPIO11 | GPIO12);
+        
+        gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, 
+                GPIO12 | GPIO13 | GPIO14 | GPIO15);
+        gpio_clear(GPIOD, GPIO12 | GPIO13 | GPIO14 | GPIO15);
 
 	usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config, usb_strings, 3);
 	usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
