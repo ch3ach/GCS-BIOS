@@ -24,6 +24,14 @@
 #include <libopencm3/usb/cdc.h>
 #include <libopencm3/cm3/scb.h>
 
+#define USB_CLASS_MISCELLANEOUS                 0xEF
+#define USB_CONFIG_POWER_MA(mA)                ((mA)/2)
+
+#define USB_CONFIG_ATTR_POWERED_MASK                0x40
+#define USB_CONFIG_ATTR_BUS_POWERED                 0x80
+//#define USB_CONFIG_ATTR_SELF_POWERED                0xC0
+//#define USB_CONFIG_ATTR_REMOTE_WAKEUP               0x20
+
 static const struct usb_device_descriptor dev = {
 	.bLength = USB_DT_DEVICE_SIZE,
 	.bDescriptorType = USB_DT_DEVICE,
@@ -152,16 +160,16 @@ static const struct usb_config_descriptor config = {
 	.bNumInterfaces = 2,
 	.bConfigurationValue = 1,
 	.iConfiguration = 0,
-	.bmAttributes = 0x80,
-	.bMaxPower = 0xFA,  // = 500mA, 0x32 = 100mA
+	.bmAttributes = USB_CONFIG_ATTR_BUS_POWERED,
+	.bMaxPower = USB_CONFIG_POWER_MA(500),  //0xFA = 500mA, 0x32 = 100mA
 
 	.interface = ifaces,
 };
 
 static const char *usb_strings[] = {
-	"CB Innovations",
-	"GCS BIOS USB Test",
-	"GCS Test",
+	"CB Innovations",     /* Index 0x01: Manufacturer */
+	"GCS BIOS USB Test",  /* Index 0x02: Product */
+	"GCS Test",           /* Index 0x03: Serial Number */
 };
 
 static int cdcacm_control_request(usbd_device *usbd_dev, struct usb_setup_data *req, u8 **buf,
