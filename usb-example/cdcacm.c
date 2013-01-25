@@ -36,9 +36,9 @@ static const struct usb_device_descriptor dev = {
 	.bLength = USB_DT_DEVICE_SIZE,
 	.bDescriptorType = USB_DT_DEVICE,
 	.bcdUSB = 0x0200,
-	.bDeviceClass = USB_CLASS_CDC,
-	.bDeviceSubClass = 0,
-	.bDeviceProtocol = 0,
+	.bDeviceClass = USB_CLASS_MISCELLANEOUS,
+	.bDeviceSubClass = 0x02,
+	.bDeviceProtocol = 0x01,
 	.bMaxPacketSize0 = 64,
 	.idVendor = 0x0483,
 	.idProduct = 0x5740,
@@ -54,6 +54,22 @@ static const struct usb_device_descriptor dev = {
  * optional, but its absence causes a NULL pointer dereference in the
  * Linux cdc_acm driver.
  */
+static const struct usb_endpoint_descriptor data_endp[] = {{
+	.bLength = USB_DT_ENDPOINT_SIZE,
+	.bDescriptorType = USB_DT_ENDPOINT,
+	.bEndpointAddress = 0x01,
+	.bmAttributes = USB_ENDPOINT_ATTR_BULK,
+	.wMaxPacketSize = 512,
+	.bInterval = 1,
+}, {
+	.bLength = USB_DT_ENDPOINT_SIZE,
+	.bDescriptorType = USB_DT_ENDPOINT,
+	.bEndpointAddress = 0x82,
+	.bmAttributes = USB_ENDPOINT_ATTR_BULK,
+	.wMaxPacketSize = 512,
+	.bInterval = 1,
+}};
+
 static const struct usb_endpoint_descriptor comm_endp[] = {{
 	.bLength = USB_DT_ENDPOINT_SIZE,
 	.bDescriptorType = USB_DT_ENDPOINT,
@@ -63,17 +79,17 @@ static const struct usb_endpoint_descriptor comm_endp[] = {{
 	.bInterval = 255,
 }};
 
-static const struct usb_endpoint_descriptor data_endp[] = {{
+static const struct usb_endpoint_descriptor msc_endp[] = {{
 	.bLength = USB_DT_ENDPOINT_SIZE,
 	.bDescriptorType = USB_DT_ENDPOINT,
-	.bEndpointAddress = 0x01,
+	.bEndpointAddress = 0x04,
 	.bmAttributes = USB_ENDPOINT_ATTR_BULK,
 	.wMaxPacketSize = 64,
 	.bInterval = 1,
 }, {
 	.bLength = USB_DT_ENDPOINT_SIZE,
 	.bDescriptorType = USB_DT_ENDPOINT,
-	.bEndpointAddress = 0x82,
+	.bEndpointAddress = 0x85,
 	.bmAttributes = USB_ENDPOINT_ATTR_BULK,
 	.wMaxPacketSize = 64,
 	.bInterval = 1,
@@ -122,7 +138,7 @@ static const struct usb_interface_descriptor comm_iface[] = {{
 	.bNumEndpoints = 1,
 	.bInterfaceClass = USB_CLASS_CDC,
 	.bInterfaceSubClass = USB_CDC_SUBCLASS_ACM,
-	.bInterfaceProtocol = USB_CDC_PROTOCOL_AT,
+	.bInterfaceProtocol = USB_CDC_PROTOCOL_NONE,
 	.iInterface = 0,
 
 	.endpoint = comm_endp,
@@ -178,6 +194,9 @@ static int cdcacm_control_request(usbd_device *usbd_dev, struct usb_setup_data *
 	(void)complete;
 	(void)buf;
 	(void)usbd_dev;
+        
+        gpio_set(GPIOD, GPIO13);
+	gpio_toggle(GPIOD, GPIO14);
 
 	switch (req->bRequest) {
 	case USB_CDC_REQ_SET_CONTROL_LINE_STATE: {
