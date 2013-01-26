@@ -32,6 +32,17 @@
 //#define USB_CONFIG_ATTR_SELF_POWERED                0xC0
 //#define USB_CONFIG_ATTR_REMOTE_WAKEUP               0x20
 
+#define USB_CDC_REQ_SEND_ENCAPSULATED_COMMAND               0x00
+#define USB_CDC_REQ_GET_ENCAPSULATED_RESPONSE               0x01
+#define USB_CDC_REQ_SET_COMM_FEATURE                        0x02
+#define USB_CDC_REQ_GET_COMM_FEATURE                        0x03
+#define USB_CDC_REQ_CLEAR_COMM_FEATURE                      0x04
+//#define USB_CDC_REQ_SET_LINE_CODING                         0x20
+#define USB_CDC_REQ_GET_LINE_CODING                         0x21
+//#define USB_CDC_REQ_SET_CONTROL_LINE_STATE                  0x22
+#define USB_CDC_REQ_SEND_BREAK                              0x23
+#define USB_CDC_REQ_NO_CMD                                  0xFF
+
 static const struct usb_device_descriptor dev = {
 	.bLength = USB_DT_DEVICE_SIZE,
 	.bDescriptorType = USB_DT_DEVICE,
@@ -252,8 +263,9 @@ int main(void)
 
 	rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_120MHZ]);
 
-        rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPDEN);
 	rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPAEN);
+        rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPCEN);
+        rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPDEN);
 	rcc_peripheral_enable_clock(&RCC_AHB2ENR, RCC_AHB2ENR_OTGFSEN);
 
 	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE,
@@ -263,6 +275,9 @@ int main(void)
         gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, 
                 GPIO12 | GPIO13 | GPIO14 | GPIO15);
         gpio_clear(GPIOD, GPIO12 | GPIO13 | GPIO14 | GPIO15);
+        
+        gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0);
+        gpio_clear(GPIOC, GPIO0);
 
 	usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config, usb_strings, 3);
 	usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
