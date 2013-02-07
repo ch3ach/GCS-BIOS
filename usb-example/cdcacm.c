@@ -24,48 +24,8 @@
 #include <libopencm3/usb/cdc.h>
 #include <libopencm3/cm3/scb.h>
 #include "messagehistory.h"
+#include "cdcacm.h"
 
-#define USB_CLASS_MISCELLANEOUS                 0xEF
-#define USB_CONFIG_POWER_MA(mA)                ((mA)/2)
-
-#define USB_CONFIG_ATTR_POWERED_MASK                0x40
-#define USB_CONFIG_ATTR_BUS_POWERED                 0x80
-//#define USB_CONFIG_ATTR_SELF_POWERED                0xC0
-//#define USB_CONFIG_ATTR_REMOTE_WAKEUP               0x20
-
-#define USB_CDC_REQ_SEND_ENCAPSULATED_COMMAND               0x00
-#define USB_CDC_REQ_GET_ENCAPSULATED_RESPONSE               0x01
-#define USB_CDC_REQ_SET_COMM_FEATURE                        0x02
-#define USB_CDC_REQ_GET_COMM_FEATURE                        0x03
-#define USB_CDC_REQ_CLEAR_COMM_FEATURE                      0x04
-//#define USB_CDC_REQ_SET_LINE_CODING                         0x20
-#define USB_CDC_REQ_GET_LINE_CODING                         0x21
-//#define USB_CDC_REQ_SET_CONTROL_LINE_STATE                  0x22
-#define USB_CDC_REQ_SEND_BREAK                              0x23
-#define USB_CDC_REQ_NO_CMD                                  0xFF
-
-static const struct usb_device_descriptor dev = {
-    .bLength = USB_DT_DEVICE_SIZE,
-    .bDescriptorType = USB_DT_DEVICE,
-    .bcdUSB = 0x0200,
-    .bDeviceClass = USB_CLASS_MISCELLANEOUS,
-    .bDeviceSubClass = 0x02,
-    .bDeviceProtocol = 0x01,
-    .bMaxPacketSize0 = 64,
-    .idVendor = 0x0483,
-    .idProduct = 0x5740,
-    .bcdDevice = 0x0200,
-    .iManufacturer = 1,
-    .iProduct = 2,
-    .iSerialNumber = 3,
-    .bNumConfigurations = 1,
-};
-
-/*
- * This notification endpoint isn't implemented. According to CDC spec it's
- * optional, but its absence causes a NULL pointer dereference in the
- * Linux cdc_acm driver.
- */
 static const struct usb_endpoint_descriptor data_endp[] = {
     {
         .bLength = USB_DT_ENDPOINT_SIZE,
@@ -84,6 +44,12 @@ static const struct usb_endpoint_descriptor data_endp[] = {
         .bInterval = 1,
     }};
 
+
+/*
+ * This notification endpoint isn't implemented. According to CDC spec it's
+ * optional, but its absence causes a NULL pointer dereference in the
+ * Linux cdc_acm driver.
+ */
 static const struct usb_endpoint_descriptor comm_endp[] = {
     {
         .bLength = USB_DT_ENDPOINT_SIZE,
@@ -151,7 +117,7 @@ static const struct {
     }
 };
 
-static const struct usb_interface_descriptor comm_iface[] = {
+const struct usb_interface_descriptor comm_iface[] = {
     {
         .bLength = USB_DT_INTERFACE_SIZE,
         .bDescriptorType = USB_DT_INTERFACE,
@@ -169,7 +135,7 @@ static const struct usb_interface_descriptor comm_iface[] = {
         .extralen = sizeof (cdcacm_functional_descriptors)
     }};
 
-static const struct usb_interface_descriptor data_iface[] = {
+const struct usb_interface_descriptor data_iface[] = {
     {
         .bLength = USB_DT_INTERFACE_SIZE,
         .bDescriptorType = USB_DT_INTERFACE,
@@ -183,35 +149,6 @@ static const struct usb_interface_descriptor data_iface[] = {
 
         .endpoint = data_endp,
     }};
-
-static const struct usb_interface ifaces[] = {
-    {
-        .num_altsetting = 1,
-        .altsetting = comm_iface,
-    },
-    {
-        .num_altsetting = 1,
-        .altsetting = data_iface,
-    }};
-
-static const struct usb_config_descriptor config = {
-    .bLength = USB_DT_CONFIGURATION_SIZE,
-    .bDescriptorType = USB_DT_CONFIGURATION,
-    .wTotalLength = 0,
-    .bNumInterfaces = 2,
-    .bConfigurationValue = 1,
-    .iConfiguration = 0,
-    .bmAttributes = USB_CONFIG_ATTR_BUS_POWERED,
-    .bMaxPower = USB_CONFIG_POWER_MA(500), //0xFA = 500mA, 0x32 = 100mA
-
-    .interface = ifaces,
-};
-
-static const char *usb_strings[] = {
-    "CB Innovations", /* Index 0x01: Manufacturer */
-    "GCS BIOS USB Test", /* Index 0x02: Product */
-    "GCS Test", /* Index 0x03: Serial Number */
-};
 
 static int cdcacm_control_request(usbd_device *usbd_dev, struct usb_setup_data *req, u8 **buf,
         u16 *len, void (**complete)(usbd_device *usbd_dev, struct usb_setup_data *req)) {
@@ -257,7 +194,7 @@ static void cdcacm_data_rx_cb(usbd_device *usbd_dev, u8 ep) {
     gpio_toggle(GPIOD, GPIO12);
 }
 
-static void cdcacm_set_config(usbd_device *usbd_dev, u16 wValue) {
+void cdcacm_set_config(usbd_device *usbd_dev, u16 wValue) {
     (void) wValue;
 
     usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64, cdcacm_data_rx_cb);
@@ -269,37 +206,4 @@ static void cdcacm_set_config(usbd_device *usbd_dev, u16 wValue) {
             USB_REQ_TYPE_CLASS | USB_REQ_TYPE_INTERFACE,
             USB_REQ_TYPE_TYPE | USB_REQ_TYPE_RECIPIENT,
             cdcacm_control_request);
-}
-
-uint8_t histbuffer[1024];
-
-int main(void) {
-    usbd_device *usbd_dev;
-
-    rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_168MHZ]);
-
-    rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPAEN);
-    rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPCEN);
-    rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPDEN);
-    rcc_peripheral_enable_clock(&RCC_AHB2ENR, RCC_AHB2ENR_OTGFSEN);
-
-    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE,
-            GPIO9 | GPIO11 | GPIO12);
-    gpio_set_af(GPIOA, GPIO_AF10, GPIO9 | GPIO11 | GPIO12);
-
-    gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
-            GPIO12 | GPIO13 | GPIO14 | GPIO15);
-    gpio_clear(GPIOD, GPIO12 | GPIO13 | GPIO14 | GPIO15);
-
-    gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0);
-    gpio_clear(GPIOC, GPIO0);
-
-    history_init(histbuffer, sizeof (histbuffer));
-
-    usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config, usb_strings, 3);
-    usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
-
-    while (1) {
-        usbd_poll(usbd_dev);
-    }
 }
