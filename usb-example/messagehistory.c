@@ -21,6 +21,25 @@ typedef enum {
     USB_FRAME
 } historyCmd_t;
 
+static int32_t bin2hex(char* buf, const uint8_t data) {
+    char tmp;
+    tmp = data;
+    tmp >>= 4;
+    tmp += '0';
+    if (tmp > '9')
+        tmp += 'A' - '9' - 1;
+    buf[0] = tmp;
+
+    tmp = data;
+    tmp &= 0x0F;
+    tmp += '0';
+    if (tmp > '9')
+        tmp += 'A' - '9' - 1;
+    buf[1] = tmp;
+
+    return 2;
+}
+
 void history_init(uint8_t* buffer, int32_t size) {
     int32_t tmp = (int32_t) buffer;
     if (0 != (tmp & 0x03)) {
@@ -38,7 +57,7 @@ void history_init(uint8_t* buffer, int32_t size) {
 void history_usbStart(void) {
     histheader_t* head = (histheader_t*) & histbuffer[histpointer];
 
-    if ((histpointer + sizeof (histheader_t)) >= histsize)
+    if ((histpointer + (int32_t)sizeof (histheader_t)) >= histsize)
         return;
 
     head->opCode = USB_START;
@@ -51,7 +70,7 @@ void history_usbFrame(uint8_t endPoint, uint8_t* buf, uint16_t size) {
     uint16_t n;
     histheader_t* head = (histheader_t*) & histbuffer[histpointer];
 
-    if ((histpointer + sizeof (histheader_t) + size) >= histsize)
+    if ((histpointer + (int32_t)sizeof (histheader_t) + size) >= histsize)
         return;
 
     head->opCode = USB_FRAME;
@@ -71,38 +90,59 @@ void history_usbFrame(uint8_t endPoint, uint8_t* buf, uint16_t size) {
 }
 
 uint16_t history_getASCIIPackage(uint8_t* out, uint16_t outsize) {
-    uint16_t n, ret = 0;
+    uint16_t add, ret = 0;
+    char* buf=(char*)out;
     histheader_t* head = (histheader_t*) & histbuffer[histreader];
+
+    histreader += sizeof (histheader_t);
 
     switch (head->opCode) {
         case STOP_MARKER:
             histreader = 0;
             history_disposeData();
-            break;
+            return 0;
         case USB_START:
         {
             const char* startUSB = "Start USB\n";
             ret = 10;
             if (ret > outsize)
                 ret = outsize;
-            memcpy(out, startUSB, ret);
+            memcpy(buf, startUSB, ret);
         }
             break;
         case USB_FRAME:
         {
-            
+            if (outsize > 2) {
+                ret += bin2hex(buf, head->endPoint);
+            }
+            if (outsize > 3) {
+                buf[ret] = ':';
+                ret++;
+            }
+            if (outsize > 4) {
+                buf[ret] = ' ';
+                ret++;
+            }
+
+            buf[ret - 1] = '\n';
         }
-        break;
+            break;
         default:
         {
             const char* unknownError = "ERROR: Unknown Package\n";
             ret = 23;
             if (ret > outsize)
                 ret = outsize;
-            memcpy(out, unknownError, ret);
+            memcpy(buf, unknownError, ret);
         }
             break;
     }
+
+    add = head->size;
+    add += 0x03;
+    add &= ~0x03;
+
+    histreader += add;
 
     return ret;
 }
