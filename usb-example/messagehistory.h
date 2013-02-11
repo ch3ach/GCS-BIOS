@@ -22,7 +22,7 @@ void history_usbStart(void);
 
 void history_usbFrame(uint8_t endPoint, uint8_t* buf, uint16_t size);
 
-uint16_t history_getASCIIPackage(uint8_t* out, uint16_t outsize);
+uint16_t history_getASCIIPackage(char* out, uint16_t outsize);
 
 void history_disposeData(void);
 

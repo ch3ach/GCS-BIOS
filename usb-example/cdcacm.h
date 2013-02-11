@@ -27,10 +27,16 @@
 #define USB_CDC_REQ_SEND_BREAK                              0x23
 #define USB_CDC_REQ_NO_CMD                                  0xFF
 
+#define USB_CDC_RECV_BUFFER_COUNT                           2
+#define USB_CDC_RECV_BUFFER_SIZE                            64
 
 #ifdef	__cplusplus
 extern "C" {
 #endif
+
+    extern char recvBuf[USB_CDC_RECV_BUFFER_COUNT][USB_CDC_RECV_BUFFER_SIZE];
+    extern volatile int32_t recvBufLen[USB_CDC_RECV_BUFFER_COUNT];
+    extern volatile int32_t readBuffer;
 
     extern const struct usb_interface_descriptor comm_iface[];
     extern const struct usb_interface_descriptor data_iface[];

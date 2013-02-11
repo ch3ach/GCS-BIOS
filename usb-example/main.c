@@ -35,7 +35,8 @@ static const struct usb_interface ifaces[] = {
     {
         .num_altsetting = 1,
         .altsetting = data_iface,
-    }};
+    }
+};
 
 static const struct usb_config_descriptor config = {
     .bLength = USB_DT_CONFIGURATION_SIZE,
@@ -80,6 +81,9 @@ int main(void) {
 
     gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0);
     gpio_clear(GPIOC, GPIO0);
+    
+    recvBufLen[0] = 0;
+    recvBufLen[1] = 0;
 
     history_init(histbuffer, sizeof (histbuffer));
 
@@ -88,5 +92,9 @@ int main(void) {
 
     while (1) {
         usbd_poll(usbd_dev);
+        if (recvBufLen[readBuffer] != 0) {
+            usbd_ep_write_packet(usbd_dev, 0x82, recvBuf[readBuffer], recvBufLen[readBuffer]);
+            recvBufLen[readBuffer] = 0;
+        }/**/
     }
 }

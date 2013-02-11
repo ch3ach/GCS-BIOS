@@ -42,7 +42,8 @@ static const struct usb_endpoint_descriptor data_endp[] = {
         .bmAttributes = USB_ENDPOINT_ATTR_BULK,
         .wMaxPacketSize = 512,
         .bInterval = 1,
-    }};
+    }
+};
 
 
 /*
@@ -58,7 +59,8 @@ static const struct usb_endpoint_descriptor comm_endp[] = {
         .bmAttributes = USB_ENDPOINT_ATTR_INTERRUPT,
         .wMaxPacketSize = 16,
         .bInterval = 255,
-    }};
+    }
+};
 
 static const struct usb_endpoint_descriptor msc_endp[] = {
     {
@@ -76,7 +78,8 @@ static const struct usb_endpoint_descriptor msc_endp[] = {
         .bmAttributes = USB_ENDPOINT_ATTR_BULK,
         .wMaxPacketSize = 64,
         .bInterval = 1,
-    }};
+    }
+};
 
 static const struct {
     struct usb_cdc_header_descriptor header;
@@ -133,7 +136,8 @@ const struct usb_interface_descriptor comm_iface[] = {
 
         .extra = &cdcacm_functional_descriptors,
         .extralen = sizeof (cdcacm_functional_descriptors)
-    }};
+    }
+};
 
 const struct usb_interface_descriptor data_iface[] = {
     {
@@ -148,7 +152,8 @@ const struct usb_interface_descriptor data_iface[] = {
         .iInterface = 0,
 
         .endpoint = data_endp,
-    }};
+    }
+};
 
 static int cdcacm_control_request(usbd_device *usbd_dev, struct usb_setup_data *req, u8 **buf,
         u16 *len, void (**complete)(usbd_device *usbd_dev, struct usb_setup_data *req)) {
@@ -158,7 +163,7 @@ static int cdcacm_control_request(usbd_device *usbd_dev, struct usb_setup_data *
 
     gpio_set(GPIOD, GPIO13);
     gpio_toggle(GPIOD, GPIO14);
-    
+
     history_usbFrame(0, *buf, *len);
 
     switch (req->bRequest) {
@@ -180,15 +185,40 @@ static int cdcacm_control_request(usbd_device *usbd_dev, struct usb_setup_data *
     return 0;
 }
 
+char recvBuf[USB_CDC_RECV_BUFFER_COUNT][USB_CDC_RECV_BUFFER_SIZE];
+volatile int32_t recvBufLen[USB_CDC_RECV_BUFFER_COUNT];
+volatile int32_t readBuffer = 0;
+
+static int32_t writeOffset = 0;
+static int32_t writeBuffer = 1;
+
 static void cdcacm_data_rx_cb(usbd_device *usbd_dev, u8 ep) {
     (void) ep;
+    int32_t n, n_old = 0;
 
     char buf[64];
     int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
 
+    for (n = 0; n < len; n++) {
+        if ((buf[n] == '\n') || ((writeOffset + n - n_old) >= USB_CDC_RECV_BUFFER_SIZE - 1)) {
+            recvBuf[writeBuffer][writeOffset + n - n_old] = 0;
+            recvBufLen[writeBuffer] = writeOffset + n - n_old;
+            writeOffset = 0;
+            readBuffer = writeBuffer;
+            if (writeBuffer != 0)
+                writeBuffer = 0;
+            else
+                writeBuffer = 1;
+            n_old = n;
+        } else {
+            recvBuf[writeBuffer][writeOffset + n - n_old] = buf[n];
+        }
+    }
+    writeOffset += len - n_old;
+
     if (len) {
-        while (usbd_ep_write_packet(usbd_dev, 0x82, buf, len) == 0)
-            ;
+        //while (usbd_ep_write_packet(usbd_dev, 0x82, buf, len) == 0) {
+        //}
     }
 
     gpio_toggle(GPIOD, GPIO12);
