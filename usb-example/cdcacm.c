@@ -187,10 +187,10 @@ static int cdcacm_control_request(usbd_device *usbd_dev, struct usb_setup_data *
 
 char recvBuf[USB_CDC_RECV_BUFFER_COUNT][USB_CDC_RECV_BUFFER_SIZE];
 volatile int32_t recvBufLen[USB_CDC_RECV_BUFFER_COUNT];
-volatile int32_t readBuffer = 0;
+volatile int32_t readBuffer = 1;
 
-static int32_t writeOffset = 0;
-static int32_t writeBuffer = 1;
+volatile int32_t writeOffset = 0;
+volatile int32_t writeBuffer = 0;
 
 static void cdcacm_data_rx_cb(usbd_device *usbd_dev, u8 ep) {
     (void) ep;
@@ -205,16 +205,19 @@ static void cdcacm_data_rx_cb(usbd_device *usbd_dev, u8 ep) {
             recvBufLen[writeBuffer] = writeOffset + n - n_old;
             writeOffset = 0;
             readBuffer = writeBuffer;
-            if (writeBuffer != 0)
-                writeBuffer = 0;
-            else
+            if (writeBuffer == 0)
                 writeBuffer = 1;
-            n_old = n;
+            else
+                writeBuffer = 0;
+            n_old = n + 1;
         } else {
+            if (writeOffset == 0) {
+                writeOffset = bin2hex(recvBuf[writeBuffer], (uint8_t) len);
+            }
             recvBuf[writeBuffer][writeOffset + n - n_old] = buf[n];
         }
     }
-    writeOffset += len - n_old;
+    writeOffset += n - n_old;
 
     if (len) {
         //while (usbd_ep_write_packet(usbd_dev, 0x82, buf, len) == 0) {

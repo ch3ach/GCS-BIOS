@@ -21,7 +21,7 @@ typedef enum {
     USB_FRAME
 } historyCmd_t;
 
-static int32_t bin2hex(char* buf, const uint8_t data) {
+int32_t bin2hex(char* buf, const uint8_t data) {
     char tmp;
     tmp = data;
     tmp >>= 4;

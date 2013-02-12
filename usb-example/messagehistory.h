@@ -16,15 +16,17 @@
 extern "C" {
 #endif
 
-void history_init(uint8_t* buffer, int32_t size);
+    int32_t bin2hex(char* buf, const uint8_t data);
 
-void history_usbStart(void);
+    void history_init(uint8_t* buffer, int32_t size);
 
-void history_usbFrame(uint8_t endPoint, uint8_t* buf, uint16_t size);
+    void history_usbStart(void);
 
-uint16_t history_getASCIIPackage(char* out, uint16_t outsize);
+    void history_usbFrame(uint8_t endPoint, uint8_t* buf, uint16_t size);
 
-void history_disposeData(void);
+    uint16_t history_getASCIIPackage(char* out, uint16_t outsize);
+
+    void history_disposeData(void);
 
 
 #ifdef	__cplusplus
