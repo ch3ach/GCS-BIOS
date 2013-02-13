@@ -57,12 +57,16 @@ static const char *usb_strings[] = {
     "GCS Test", /* Index 0x03: Serial Number */
 };
 
-
+typedef enum {
+    INTERPRETER_WAIT,
+    INTERPRETER_SENDHIST
+} interpreter_state_t;
 
 uint8_t histbuffer[1024];
 
 int main(void) {
     usbd_device *usbd_dev;
+    interpreter_state_t state = INTERPRETER_WAIT;
 
     rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_168MHZ]);
 
@@ -81,7 +85,7 @@ int main(void) {
 
     gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0);
     gpio_clear(GPIOC, GPIO0);
-    
+
     recvBufLen[0] = 0;
     recvBufLen[1] = 0;
 
@@ -92,9 +96,21 @@ int main(void) {
 
     while (1) {
         usbd_poll(usbd_dev);
-        if (recvBufLen[readBuffer] != 0) {
-            usbd_ep_write_packet(usbd_dev, 0x82, recvBuf[readBuffer], recvBufLen[readBuffer]);
-            recvBufLen[readBuffer] = 0;
-        }/**/
+        switch (state) {
+            case INTERPRETER_WAIT:
+                if (recvBufLen[readBuffer] != 0) {
+                    if (memcmp(recvBuf[readBuffer], "get", 3) == 0) {
+                        state = INTERPRETER_SENDHIST;
+                    } else {
+                        usbd_ep_write_packet(usbd_dev, 0x82, "STM32: unknown command\n", 23);
+                    }
+                    recvBufLen[readBuffer] = 0;
+                }
+                break;
+            case INTERPRETER_SENDHIST:
+                usbd_ep_write_packet(usbd_dev, 0x82, "STM32: sending history\n", 23);
+                state = INTERPRETER_WAIT;
+                break;
+        }
     }
 }

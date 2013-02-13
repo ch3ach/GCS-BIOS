@@ -211,9 +211,6 @@ static void cdcacm_data_rx_cb(usbd_device *usbd_dev, u8 ep) {
                 writeBuffer = 0;
             n_old = n + 1;
         } else {
-            if (writeOffset == 0) {
-                writeOffset = bin2hex(recvBuf[writeBuffer], (uint8_t) len);
-            }
             recvBuf[writeBuffer][writeOffset + n - n_old] = buf[n];
         }
     }
