@@ -1,0 +1,6 @@
+*.[od]
+*.bin
+*.elf
+*.hex
+*.list
+*.srec
