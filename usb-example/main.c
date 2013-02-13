@@ -62,11 +62,13 @@ typedef enum {
     INTERPRETER_SENDHIST
 } interpreter_state_t;
 
-uint8_t histbuffer[1024];
+uint32_t histbuffer[512];
 
 int main(void) {
     usbd_device *usbd_dev;
     interpreter_state_t state = INTERPRETER_WAIT;
+    char strBuf[64];
+    uint16_t strLen = 0;
 
     rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_168MHZ]);
 
@@ -89,7 +91,7 @@ int main(void) {
     recvBufLen[0] = 0;
     recvBufLen[1] = 0;
 
-    history_init(histbuffer, sizeof (histbuffer));
+    history_init((uint8_t*) histbuffer, sizeof (histbuffer));
 
     usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config, usb_strings, 3);
     usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
@@ -108,8 +110,15 @@ int main(void) {
                 }
                 break;
             case INTERPRETER_SENDHIST:
-                usbd_ep_write_packet(usbd_dev, 0x82, "STM32: sending history\n", 23);
-                state = INTERPRETER_WAIT;
+                if (strLen == 0) {
+                    strLen = history_getASCIIPackage(strBuf, sizeof (strBuf));
+                }
+                if (strLen == 0) {
+                    state = INTERPRETER_WAIT;
+                } else {
+                    if (usbd_ep_write_packet(usbd_dev, 0x82, strBuf, strLen) != 0)
+                        strLen = 0;
+                }
                 break;
         }
     }

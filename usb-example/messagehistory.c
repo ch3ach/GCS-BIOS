@@ -18,7 +18,8 @@ typedef struct {
 typedef enum {
     STOP_MARKER = 0,
     USB_START = 1,
-    USB_FRAME
+    USB_FRAME,
+    USB_CONTROL
 } historyCmd_t;
 
 int32_t bin2hex(char* buf, const uint8_t data) {
@@ -89,9 +90,37 @@ void history_usbFrame(uint8_t endPoint, uint8_t* buf, uint16_t size) {
     histbuffer[histpointer] = STOP_MARKER;
 }
 
+void history_usbControl(void* controlBuf, uint8_t controlSize, uint8_t* dataBuf, uint16_t dataSize) {
+    uint16_t n, m;
+    histheader_t* head = (histheader_t*) & histbuffer[histpointer];
+    uint8_t* cBuf = (uint8_t*) controlBuf;
+
+    if ((histpointer + (int32_t)sizeof (histheader_t) + controlSize + dataSize) >= histsize)
+        return;
+
+    head->opCode = USB_CONTROL;
+    head->endPoint = controlSize;
+    head->size = controlSize + dataSize;
+    histpointer += sizeof (histheader_t);
+
+    for (n = 0; n < controlSize; n++) {
+        histbuffer[histpointer + n] = cBuf[n];
+    }
+    m = n;
+    for (n = 0; n < dataSize; n++, m++) {
+        histbuffer[histpointer + m] = dataBuf[n];
+    }
+
+    m += 0x03;
+    m &= ~0x03;
+    histpointer += m;
+
+    histbuffer[histpointer] = STOP_MARKER;
+}
+
 uint16_t history_getASCIIPackage(char* out, uint16_t outsize) {
     uint16_t add, ret = 0;
-    char* buf=(char*)out;
+    char* buf = (char*) out;
     histheader_t* head = (histheader_t*) & histbuffer[histreader];
 
     histreader += sizeof (histheader_t);
@@ -103,15 +132,19 @@ uint16_t history_getASCIIPackage(char* out, uint16_t outsize) {
             return 0;
         case USB_START:
         {
-            const char* startUSB = "Start USB\n";
-            ret = 10;
+            const char msg[] = "Start USB\n";
+            const uint16_t msgLen = sizeof (msg);
+            ret = msgLen - 1;
             if (ret > outsize)
                 ret = outsize;
-            memcpy(buf, startUSB, ret);
+            memcpy(buf, msg, ret);
         }
             break;
         case USB_FRAME:
         {
+            uint16_t n;
+            uint8_t* data = &histbuffer[histreader];
+
             if (outsize > 2) {
                 ret += bin2hex(buf, head->endPoint);
             }
@@ -123,17 +156,56 @@ uint16_t history_getASCIIPackage(char* out, uint16_t outsize) {
                 buf[ret] = ' ';
                 ret++;
             }
+            for (n = 0; n < head->size; n++) {
+                ret += bin2hex(&buf[ret], data[n]);
+                buf[ret] = ' ';
+                ret++;
+            }
+
+            buf[ret - 1] = '\n';
+        }
+            break;
+        case USB_CONTROL:
+        {
+            const char msg[] = "control: ";
+            const uint16_t msgLen = sizeof (msg);
+            uint16_t n;
+            uint8_t* data = &histbuffer[histreader];
+
+            if (outsize > msgLen) {
+                ret = msgLen - 1;
+                if (ret > outsize)
+                    ret = outsize;
+                memcpy(buf, msg, ret);
+            }
+            for (n = 0; (n < head->endPoint) && (ret + 3 < outsize); n++) {
+                ret += bin2hex(&buf[ret], data[n]);
+                buf[ret] = ' ';
+                ret++;
+            }
+            if (outsize > ret + 2) {
+                buf[ret] = '|';
+                ret++;
+                buf[ret] = ' ';
+                ret++;
+            }
+            for (; (n < head->size) && (ret + 3 < outsize); n++) {
+                ret += bin2hex(&buf[ret], data[n]);
+                buf[ret] = ' ';
+                ret++;
+            }
 
             buf[ret - 1] = '\n';
         }
             break;
         default:
         {
-            const char* unknownError = "ERROR: Unknown Package\n";
-            ret = 23;
+            const char msg[] = "ERROR: Unknown Package\n";
+            const uint16_t msgLen = sizeof (msg);
+            ret = msgLen - 1;
             if (ret > outsize)
                 ret = outsize;
-            memcpy(buf, unknownError, ret);
+            memcpy(buf, msg, ret);
         }
             break;
     }
@@ -143,6 +215,11 @@ uint16_t history_getASCIIPackage(char* out, uint16_t outsize) {
     add &= ~0x03;
 
     histreader += add;
+
+    if (histreader >= histpointer) {
+        histreader = 0;
+        history_disposeData();
+    }
 
     return ret;
 }

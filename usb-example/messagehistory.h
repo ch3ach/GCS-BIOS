@@ -23,6 +23,7 @@ extern "C" {
     void history_usbStart(void);
 
     void history_usbFrame(uint8_t endPoint, uint8_t* buf, uint16_t size);
+    void history_usbControl(void* controlBuf, uint8_t controlSize, uint8_t* dataBuf, uint16_t dataSize);
 
     uint16_t history_getASCIIPackage(char* out, uint16_t outsize);
 

@@ -164,7 +164,7 @@ static int cdcacm_control_request(usbd_device *usbd_dev, struct usb_setup_data *
     gpio_set(GPIOD, GPIO13);
     gpio_toggle(GPIOD, GPIO14);
 
-    history_usbFrame(0, *buf, *len);
+    history_usbControl(req, sizeof (struct usb_setup_data), *buf, *len);
 
     switch (req->bRequest) {
         case USB_CDC_REQ_SET_CONTROL_LINE_STATE:
