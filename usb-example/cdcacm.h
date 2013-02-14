@@ -8,13 +8,7 @@
 #ifndef CDCACM_H
 #define	CDCACM_H
 
-#define USB_CLASS_MISCELLANEOUS                 0xEF
-#define USB_CONFIG_POWER_MA(mA)                ((mA)/2)
-
-#define USB_CONFIG_ATTR_POWERED_MASK                0x40
-#define USB_CONFIG_ATTR_BUS_POWERED                 0x80
-//#define USB_CONFIG_ATTR_SELF_POWERED                0xC0
-//#define USB_CONFIG_ATTR_REMOTE_WAKEUP               0x20
+#include <libopencm3/usb/usbd.h>
 
 #define USB_CDC_REQ_SEND_ENCAPSULATED_COMMAND               0x00
 #define USB_CDC_REQ_GET_ENCAPSULATED_RESPONSE               0x01
@@ -41,7 +35,7 @@ extern "C" {
     extern const struct usb_interface_descriptor comm_iface[];
     extern const struct usb_interface_descriptor data_iface[];
 
-    void cdcacm_set_config(usbd_device *usbd_dev, u16 wValue);
+    void cdcacm_data_rx_cb(usbd_device *usbd_dev, u8 ep);
 
 
 #ifdef	__cplusplus
