@@ -6,6 +6,7 @@
 #include <libopencm3/cm3/scb.h>
 #include "messagehistory.h"
 #include "usbmanager.h"
+#include "usbstorage.h"
 #include "cdcacm.h"
 
 

@@ -31,7 +31,7 @@ static const struct usb_endpoint_descriptor data_endp[] = {
         .bDescriptorType = USB_DT_ENDPOINT,
         .bEndpointAddress = 0x01,
         .bmAttributes = USB_ENDPOINT_ATTR_BULK,
-        .wMaxPacketSize = 512,
+        .wMaxPacketSize = CDC_ENDPOINT_PACKAGE_SIZE,
         .bInterval = 1,
     },
     {
@@ -39,7 +39,7 @@ static const struct usb_endpoint_descriptor data_endp[] = {
         .bDescriptorType = USB_DT_ENDPOINT,
         .bEndpointAddress = 0x82,
         .bmAttributes = USB_ENDPOINT_ATTR_BULK,
-        .wMaxPacketSize = 512,
+        .wMaxPacketSize = CDC_ENDPOINT_PACKAGE_SIZE,
         .bInterval = 1,
     }
 };
@@ -165,8 +165,8 @@ void cdcacm_data_rx_cb(usbd_device *usbd_dev, u8 ep) {
     (void) ep;
     int32_t n, n_old = 0;
 
-    char buf[64];
-    int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
+    char buf[CDC_ENDPOINT_PACKAGE_SIZE];
+    int len = usbd_ep_read_packet(usbd_dev, ep, buf, CDC_ENDPOINT_PACKAGE_SIZE);
 
     for (n = 0; n < len; n++) {
         if ((buf[n] == '\n') || ((writeOffset + n - n_old) >= USB_CDC_RECV_BUFFER_SIZE - 1)) {
