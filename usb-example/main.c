@@ -52,7 +52,7 @@ int main(void) {
                     if (memcmp(recvBuf[readBuffer], "get", 3) == 0) {
                         state = INTERPRETER_SENDHIST;
                     } else {
-                        usbmanager_send_packet(0x82, "STM32: unknown command\n", 23);
+                        usbmanager_send_packet(0x81, "STM32: unknown command\n", 23);
                     }
                     recvBufLen[readBuffer] = 0;
                 }
@@ -63,8 +63,9 @@ int main(void) {
                 }
                 if (strLen == 0) {
                     state = INTERPRETER_WAIT;
+                    gpio_clear(GPIOD, GPIO13);
                 } else {
-                    if (usbmanager_send_packet(0x82, strBuf, strLen) != 0)
+                    if (usbmanager_send_packet(0x81, strBuf, strLen) != 0)
                         strLen = 0;
                 }
                 break;

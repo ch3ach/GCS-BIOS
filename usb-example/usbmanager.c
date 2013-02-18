@@ -8,6 +8,7 @@
 #include "usbmanager.h"
 #include "usbstorage.h"
 #include "cdcacm.h"
+#include "msc.h"
 
 
 static const struct usb_device_descriptor dev = {
@@ -35,6 +36,10 @@ static const struct usb_interface ifaces[] = {
     {
         .num_altsetting = 1,
         .altsetting = data_iface,
+    },
+    {
+        .num_altsetting = 1,
+        .altsetting = msc_iface,
     }
 };
 
@@ -42,7 +47,7 @@ static const struct usb_config_descriptor config = {
     .bLength = USB_DT_CONFIGURATION_SIZE,
     .bDescriptorType = USB_DT_CONFIGURATION,
     .wTotalLength = 0,
-    .bNumInterfaces = 2,
+    .bNumInterfaces = 3,
     .bConfigurationValue = 1,
     .iConfiguration = 0,
     .bmAttributes = USB_CONFIG_ATTR_BUS_POWERED,
@@ -59,7 +64,7 @@ static const char *usb_strings[] = {
 
 static usbd_device *usbd_dev;
 
-static int cdcacm_control_request(usbd_device *usbd_dev, struct usb_setup_data *req, u8 **buf,
+static int usbmanager_control_request(usbd_device *usbd_dev, struct usb_setup_data *req, u8 **buf,
         u16 *len, void (**complete)(usbd_device *usbd_dev, struct usb_setup_data *req)) {
     (void) complete;
     (void) buf;
@@ -78,34 +83,55 @@ static int cdcacm_control_request(usbd_device *usbd_dev, struct usb_setup_data *
              * even though it's optional in the CDC spec, and we don't
              * advertise it in the ACM functional descriptor.
              */
-            return 1;
+            return USBD_REQ_HANDLED;
         }
         case USB_CDC_REQ_SET_LINE_CODING:
+        {
             if (*len < sizeof (struct usb_cdc_line_coding))
-                return 0;
+                return USBD_REQ_NOTSUPP;
 
-            return 1;
+            return USBD_REQ_HANDLED;
+        }
+        case MSC_REQUEST_GET_MAX_LUN:
+        {
+            *buf[0] = 2;
+            *len = 1;
+            return USBD_REQ_HANDLED;
+        }
     }
-    return 0;
+    return USBD_REQ_NOTSUPP;
 }
 
-static void cdcacm_set_config(usbd_device *usbd_dev, u16 wValue) {
+static void usbmanager_data_rx(usbd_device *usbd_dev, u8 ep) {
+    switch (ep) {
+        case 0x01: cdcacm_data_rx_cb(usbd_dev, ep);
+            break;
+        case 0x03: msc_data_rx_cb(usbd_dev, ep);
+            break;
+    }
+}
+
+static void usbmanager_set_config(usbd_device *usbd_dev, u16 wValue) {
     (void) wValue;
 
-    usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64, cdcacm_data_rx_cb);
-    usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_BULK, 64, NULL);
-    usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
+    history_usbStart();
+
+    usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, CDC_ENDPOINT_PACKAGE_SIZE, usbmanager_data_rx);
+    usbd_ep_setup(usbd_dev, 0x81, USB_ENDPOINT_ATTR_BULK, CDC_ENDPOINT_PACKAGE_SIZE, NULL);
+    usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
+    usbd_ep_setup(usbd_dev, 0x03, USB_ENDPOINT_ATTR_BULK, MSC_ENDPOINT_PACKAGE_SIZE, usbmanager_data_rx);
+    usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_BULK, MSC_ENDPOINT_PACKAGE_SIZE, NULL);
 
     usbd_register_control_callback(
             usbd_dev,
             USB_REQ_TYPE_CLASS | USB_REQ_TYPE_INTERFACE,
             USB_REQ_TYPE_TYPE | USB_REQ_TYPE_RECIPIENT,
-            cdcacm_control_request);
+            usbmanager_control_request);
 }
 
 void usbmanager_init(void) {
     usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config, usb_strings, 3);
-    usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
+    usbd_register_set_config_callback(usbd_dev, usbmanager_set_config);
 }
 
 void usbmanager_poll(void) {

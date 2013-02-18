@@ -156,7 +156,7 @@ uint16_t history_getASCIIPackage(char* out, uint16_t outsize) {
                 buf[ret] = ' ';
                 ret++;
             }
-            for (n = 0; n < head->size; n++) {
+            for (n = 0; (n < head->size) && ((ret + 3) < outsize); n++) {
                 ret += bin2hex(&buf[ret], data[n]);
                 buf[ret] = ' ';
                 ret++;

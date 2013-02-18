@@ -37,7 +37,7 @@ static const struct usb_endpoint_descriptor data_endp[] = {
     {
         .bLength = USB_DT_ENDPOINT_SIZE,
         .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = 0x82,
+        .bEndpointAddress = 0x81,
         .bmAttributes = USB_ENDPOINT_ATTR_BULK,
         .wMaxPacketSize = CDC_ENDPOINT_PACKAGE_SIZE,
         .bInterval = 1,
@@ -54,29 +54,10 @@ static const struct usb_endpoint_descriptor comm_endp[] = {
     {
         .bLength = USB_DT_ENDPOINT_SIZE,
         .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = 0x83,
+        .bEndpointAddress = 0x82,
         .bmAttributes = USB_ENDPOINT_ATTR_INTERRUPT,
         .wMaxPacketSize = 16,
         .bInterval = 255,
-    }
-};
-
-static const struct usb_endpoint_descriptor msc_endp[] = {
-    {
-        .bLength = USB_DT_ENDPOINT_SIZE,
-        .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = 0x04,
-        .bmAttributes = USB_ENDPOINT_ATTR_BULK,
-        .wMaxPacketSize = 64,
-        .bInterval = 1,
-    },
-    {
-        .bLength = USB_DT_ENDPOINT_SIZE,
-        .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = 0x85,
-        .bmAttributes = USB_ENDPOINT_ATTR_BULK,
-        .wMaxPacketSize = 64,
-        .bInterval = 1,
     }
 };
 
@@ -162,7 +143,6 @@ volatile int32_t writeOffset = 0;
 volatile int32_t writeBuffer = 0;
 
 void cdcacm_data_rx_cb(usbd_device *usbd_dev, u8 ep) {
-    (void) ep;
     int32_t n, n_old = 0;
 
     char buf[CDC_ENDPOINT_PACKAGE_SIZE];
@@ -184,11 +164,6 @@ void cdcacm_data_rx_cb(usbd_device *usbd_dev, u8 ep) {
         }
     }
     writeOffset += n - n_old;
-
-    if (len) {
-        //while (usbd_ep_write_packet(usbd_dev, 0x82, buf, len) == 0) {
-        //}
-    }
 
     gpio_toggle(GPIOD, GPIO12);
 }

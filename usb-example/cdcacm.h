@@ -21,7 +21,7 @@
 #define USB_CDC_REQ_SEND_BREAK                              0x23
 #define USB_CDC_REQ_NO_CMD                                  0xFF
 
-#define CDC_ENDPOINT_PACKAGE_SIZE                           512
+#define CDC_ENDPOINT_PACKAGE_SIZE                           64
 
 #define USB_CDC_RECV_BUFFER_COUNT                           2
 #define USB_CDC_RECV_BUFFER_SIZE                            64
