@@ -10,7 +10,7 @@ static const struct usb_endpoint_descriptor msc_endp[] = {
     {
         .bLength = USB_DT_ENDPOINT_SIZE,
         .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = 0x03,
+        .bEndpointAddress = MSC_RECEIVING_EP,
         .bmAttributes = USB_ENDPOINT_ATTR_BULK,
         .wMaxPacketSize = MSC_ENDPOINT_PACKAGE_SIZE,
         .bInterval = 1,
@@ -18,7 +18,7 @@ static const struct usb_endpoint_descriptor msc_endp[] = {
     {
         .bLength = USB_DT_ENDPOINT_SIZE,
         .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = 0x83,
+        .bEndpointAddress = MSC_SENDING_EP,
         .bmAttributes = USB_ENDPOINT_ATTR_BULK,
         .wMaxPacketSize = MSC_ENDPOINT_PACKAGE_SIZE,
         .bInterval = 1,

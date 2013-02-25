@@ -10,6 +10,9 @@
 
 #define MSC_ENDPOINT_PACKAGE_SIZE       64
 
+#define MSC_RECEIVING_EP                0x03
+#define MSC_SENDING_EP                  0x83
+
 #ifdef	__cplusplus
 extern "C" {
 #endif

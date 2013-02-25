@@ -104,7 +104,7 @@ static int usbmanager_control_request(usbd_device *usbd_dev, struct usb_setup_da
 
 static void usbmanager_data_rx(usbd_device *usbd_dev, u8 ep) {
     switch (ep) {
-        case 0x01: cdcacm_data_rx_cb(usbd_dev, ep);
+        case CDC_RECEIVING_EP: cdcacm_data_rx_cb(usbd_dev, ep);
             break;
         case 0x03: msc_data_rx_cb(usbd_dev, ep);
             break;
@@ -116,11 +116,11 @@ static void usbmanager_set_config(usbd_device *usbd_dev, u16 wValue) {
 
     history_usbStart();
 
-    usbd_ep_setup(usbd_dev, 0x01, USB_ENDPOINT_ATTR_BULK, CDC_ENDPOINT_PACKAGE_SIZE, usbmanager_data_rx);
-    usbd_ep_setup(usbd_dev, 0x81, USB_ENDPOINT_ATTR_BULK, CDC_ENDPOINT_PACKAGE_SIZE, NULL);
-    usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
-    usbd_ep_setup(usbd_dev, 0x03, USB_ENDPOINT_ATTR_BULK, MSC_ENDPOINT_PACKAGE_SIZE, usbmanager_data_rx);
-    usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_BULK, MSC_ENDPOINT_PACKAGE_SIZE, NULL);
+    usbd_ep_setup(usbd_dev, CDC_RECEIVING_EP, USB_ENDPOINT_ATTR_BULK, CDC_ENDPOINT_PACKAGE_SIZE, usbmanager_data_rx);
+    usbd_ep_setup(usbd_dev, CDC_SENDING_EP, USB_ENDPOINT_ATTR_BULK, CDC_ENDPOINT_PACKAGE_SIZE, NULL);
+    usbd_ep_setup(usbd_dev, CDC_INTERRUPT_EP, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
+    usbd_ep_setup(usbd_dev, MSC_RECEIVING_EP, USB_ENDPOINT_ATTR_BULK, MSC_ENDPOINT_PACKAGE_SIZE, usbmanager_data_rx);
+    usbd_ep_setup(usbd_dev, MSC_SENDING_EP, USB_ENDPOINT_ATTR_BULK, MSC_ENDPOINT_PACKAGE_SIZE, NULL);
 
     usbd_register_control_callback(
             usbd_dev,

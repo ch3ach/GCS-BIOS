@@ -29,7 +29,7 @@ static const struct usb_endpoint_descriptor data_endp[] = {
     {
         .bLength = USB_DT_ENDPOINT_SIZE,
         .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = 0x01,
+        .bEndpointAddress = CDC_RECEIVING_EP,
         .bmAttributes = USB_ENDPOINT_ATTR_BULK,
         .wMaxPacketSize = CDC_ENDPOINT_PACKAGE_SIZE,
         .bInterval = 1,
@@ -37,7 +37,7 @@ static const struct usb_endpoint_descriptor data_endp[] = {
     {
         .bLength = USB_DT_ENDPOINT_SIZE,
         .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = 0x81,
+        .bEndpointAddress = CDC_SENDING_EP,
         .bmAttributes = USB_ENDPOINT_ATTR_BULK,
         .wMaxPacketSize = CDC_ENDPOINT_PACKAGE_SIZE,
         .bInterval = 1,
@@ -54,7 +54,7 @@ static const struct usb_endpoint_descriptor comm_endp[] = {
     {
         .bLength = USB_DT_ENDPOINT_SIZE,
         .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = 0x82,
+        .bEndpointAddress = CDC_INTERRUPT_EP,
         .bmAttributes = USB_ENDPOINT_ATTR_INTERRUPT,
         .wMaxPacketSize = 16,
         .bInterval = 255,
