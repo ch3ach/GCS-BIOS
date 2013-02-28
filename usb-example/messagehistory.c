@@ -67,10 +67,10 @@ void history_usbStart(void) {
     histpointer += sizeof (histheader_t);
 }
 
-void history_usbFrame(uint8_t endPoint, uint8_t* buf, uint16_t size) {
+void history_usbFrame(uint8_t endPoint, void* buf, uint16_t size) {
     uint16_t n;
     histheader_t* head = (histheader_t*) & histbuffer[histpointer];
-
+    uint8_t* Buffer = (uint8_t*) buf;
     if ((histpointer + (int32_t)sizeof (histheader_t) + size) >= histsize)
         return;
 
@@ -80,7 +80,7 @@ void history_usbFrame(uint8_t endPoint, uint8_t* buf, uint16_t size) {
     histpointer += sizeof (histheader_t);
 
     for (n = 0; n < size; n++) {
-        histbuffer[histpointer + n] = buf[n];
+        histbuffer[histpointer + n] = Buffer[n];
     }
 
     size += 0x03;
@@ -149,11 +149,14 @@ uint16_t history_getASCIIPackage(char* out, uint16_t outsize) {
                 ret += bin2hex(buf, head->endPoint);
             }
             if (outsize > 3) {
-                buf[ret] = ':';
+                buf[ret] = '#';
                 ret++;
             }
-            if (outsize > 4) {
-                buf[ret] = ' ';
+            if (outsize > 5) {
+                ret += bin2hex(&buf[ret], head->size);
+            }
+            if (outsize > 6) {
+                buf[ret] = ':';
                 ret++;
             }
             for (n = 0; (n < head->size) && ((ret + 3) < outsize); n++) {

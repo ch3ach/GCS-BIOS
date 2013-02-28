@@ -106,7 +106,7 @@ static void usbmanager_data_rx(usbd_device *usbd_dev, u8 ep) {
     switch (ep) {
         case CDC_RECEIVING_EP: cdcacm_data_rx_cb(usbd_dev, ep);
             break;
-        case 0x03: msc_data_rx_cb(usbd_dev, ep);
+        case MSC_RECEIVING_EP: msc_data_rx_cb(usbd_dev, ep);
             break;
     }
 }
@@ -136,6 +136,7 @@ void usbmanager_init(void) {
 
 void usbmanager_poll(void) {
     usbd_poll(usbd_dev);
+    msc_stateMachine(usbd_dev);
 }
 
 u16 usbmanager_send_packet(u8 addr, const void *buf, u16 len) {

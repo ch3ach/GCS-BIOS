@@ -47,16 +47,6 @@
 #define MSC_REQUEST_RESET               0xFF
 #define MSC_REQUEST_GET_MAX_LUN         0xFE
 
-
-/* MSC Bulk-only Stage */
-#define MSC_BS_CBW                      0       /* Command Block Wrapper */
-#define MSC_BS_DATA_OUT                 1       /* Data Out Phase */
-#define MSC_BS_DATA_IN                  2       /* Data In Phase */
-#define MSC_BS_DATA_IN_LAST             3       /* Data In Last Phase */
-#define MSC_BS_DATA_IN_LAST_STALL       4       /* Data In Last Phase with Stall */
-#define MSC_BS_CSW                      5       /* Command Status Wrapper */
-#define MSC_BS_ERROR                    6       /* Error */
-
 #define MSC_CBW_Signature               0x43425355
 #define MSC_CSW_Signature               0x53425355
 

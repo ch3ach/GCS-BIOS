@@ -10,17 +10,17 @@
 
 #define MSC_ENDPOINT_PACKAGE_SIZE       64
 
-#define MSC_RECEIVING_EP                0x03
-#define MSC_SENDING_EP                  0x83
+#define MSC_RECEIVING_EP                0x01
+#define MSC_SENDING_EP                  (MSC_RECEIVING_EP+0x80)
 
 #ifdef	__cplusplus
 extern "C" {
 #endif
 
     extern const struct usb_interface_descriptor msc_iface[];
-    
-    void msc_data_rx_cb(usbd_device *usbd_dev, u8 ep);
 
+    void msc_data_rx_cb(usbd_device *usbd_dev, u8 ep);
+    void msc_stateMachine(usbd_device *usbd_dev);
 
 #ifdef	__cplusplus
 }

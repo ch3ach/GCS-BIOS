@@ -22,8 +22,8 @@
 #define USB_CDC_REQ_NO_CMD                                  0xFF
 
 #define CDC_ENDPOINT_PACKAGE_SIZE                           64
-#define CDC_RECEIVING_EP                                    0x01
-#define CDC_SENDING_EP                                      0x81
+#define CDC_RECEIVING_EP                                    0x03
+#define CDC_SENDING_EP                                      (CDC_RECEIVING_EP + 0x80)
 #define CDC_INTERRUPT_EP                                    0x82
 
 #define USB_CDC_RECV_BUFFER_COUNT                           2
