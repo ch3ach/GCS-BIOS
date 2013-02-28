@@ -42,20 +42,9 @@
 #define MSC_PROTOCOL_CBI_NOINT          0x01
 #define MSC_PROTOCOL_BULK_ONLY          0x50
 
-
 /* MSC Request Codes */
 #define MSC_REQUEST_RESET               0xFF
 #define MSC_REQUEST_GET_MAX_LUN         0xFE
-
-#define MSC_CBW_Signature               0x43425355
-#define MSC_CSW_Signature               0x53425355
-
-
-/* CSW Status Definitions */
-#define CSW_CMD_PASSED                  0x00
-#define CSW_CMD_FAILED                  0x01
-#define CSW_PHASE_ERROR                 0x02
-
 
 /* SCSI Commands */
 #define SCSI_TEST_UNIT_READY            0x00
