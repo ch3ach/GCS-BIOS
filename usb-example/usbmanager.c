@@ -94,7 +94,7 @@ static int usbmanager_control_request(usbd_device *usbd_dev, struct usb_setup_da
         }
         case MSC_REQUEST_GET_MAX_LUN:
         {
-            *buf[0] = 2;
+            *buf[0] = MSC_IMPLEMENTED_LUNS - 1;
             *len = 1;
             return USBD_REQ_HANDLED;
         }

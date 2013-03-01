@@ -5,6 +5,8 @@
 #include "usbstorage.h"
 #include "usbmanager.h"
 
+#include "ramdisk.h"
+
 
 static const struct usb_endpoint_descriptor msc_endp[] = {
     {
@@ -85,6 +87,17 @@ static bool RXPackage = false;
 static int32_t cmdLen = 0;
 static uint32_t cmdBuffer[64]; // <- 256 bytes but alligned...
 
+static void change_endian(void* point, int32_t len) {
+    int32_t n;
+    uint8_t tmp;
+    uint8_t* buf = (uint8_t*) point;
+    for (n = 0; n < (len / 2); n++) {
+        tmp = buf[n];
+        buf[n] = buf[len - n - 1];
+        buf[len - n - 1] = tmp;
+    }
+}
+
 static inline msc_status_t msc_SCSIinquiry(uint32_t* buf, int32_t* len) {
     int32_t n;
     const uint8_t stdInqData[36] = {
@@ -102,13 +115,37 @@ static inline msc_status_t msc_SCSIinquiry(uint32_t* buf, int32_t* len) {
     return MSC_SEND_DATA;
 }
 
+static msc_status_t msc_testUnitReady(_msc_cbwheader_t* cmd) {
+    switch (cmd->LUN) {
+        case 0:
+            if (ramdisk_ready())
+                return MSC_SEND_OK;
+            break;
+    }
+    return MSC_SEND_FAIL;
+}
+
+static msc_status_t msc_readCapacity(_msc_cbwheader_t* cmd, int32_t* cmdLen) {
+    uint32_t* values = (uint32_t*) cmd;
+    switch (cmd->LUN) {
+        case 0:
+            values[0] = ramdisk_getBlockCount();
+            values[1] = ramdisk_getBlockSize();
+            change_endian(&values[0], sizeof (uint32_t));
+            change_endian(&values[1], sizeof (uint32_t));
+            *cmdLen = 8;
+            return MSC_SEND_DATA;
+    }
+    return MSC_SEND_FAIL;
+}
+
 static msc_status_t msc_tryExecuteSCSI(_msc_cbwheader_t* cmd, int32_t* cmdLen, int32_t cmdBufferSize) {
     (void) cmdBufferSize;
-    if (*cmdLen <= 0)
+    if (*cmdLen < (int32_t)sizeof (_msc_cbwheader_t))
         return MSC_STANDBY;
 
     switch (cmd->CB[0]) {
-        case SCSI_TEST_UNIT_READY: return MSC_SEND_OK;
+        case SCSI_TEST_UNIT_READY: return msc_testUnitReady(cmd);
         case SCSI_REQUEST_SENSE: return MSC_SEND_FAIL;
         case SCSI_FORMAT_UNIT: return MSC_SEND_FAIL;
         case SCSI_INQUIRY: return msc_SCSIinquiry((uint32_t*) cmd, cmdLen);
@@ -117,7 +154,7 @@ static msc_status_t msc_tryExecuteSCSI(_msc_cbwheader_t* cmd, int32_t* cmdLen, i
         case SCSI_START_STOP_UNIT: return MSC_SEND_FAIL;
         case SCSI_MEDIA_REMOVAL: return MSC_SEND_FAIL;
         case SCSI_READ_FORMAT_CAPACITIES: return MSC_SEND_FAIL;
-        case SCSI_READ_CAPACITY: return MSC_SEND_FAIL;
+        case SCSI_READ_CAPACITY: return msc_readCapacity(cmd, cmdLen);
         case SCSI_READ10: return MSC_SEND_FAIL;
         case SCSI_WRITE10: return MSC_SEND_FAIL;
         case SCSI_VERIFY10: return MSC_SEND_FAIL;

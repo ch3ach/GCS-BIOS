@@ -30,7 +30,7 @@ LDFLAGS		+= --static -lc -lnosys -L$(LIBOPENCM3_DIR)/lib \
 			 -L$(LIBOPENCM3_DIR)/lib/stm32/f4 \
 		   -T$(LDSCRIPT) -nostartfiles -Wl,--gc-sections \
 		   -mthumb -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
-OBJS		+= cdcacm.o messagehistory.o usbmanager.o usbstorage.o main.o
+OBJS		+= cdcacm.o messagehistory.o usbmanager.o usbstorage.o ramdisk.o main.o
 
 # Be silent per default, but 'make V=1' will show all compiler calls.
 ifneq ($(V),1)

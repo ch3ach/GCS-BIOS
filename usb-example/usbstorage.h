@@ -13,6 +13,8 @@
 #define MSC_RECEIVING_EP                0x01
 #define MSC_SENDING_EP                  (MSC_RECEIVING_EP+0x80)
 
+#define MSC_IMPLEMENTED_LUNS            1
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
