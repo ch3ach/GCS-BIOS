@@ -83,9 +83,56 @@ typedef enum {
     MSC_SEND_PHASE_ERROR
 } msc_status_t;
 
+typedef enum {
+    noError = 0,
+    recovered, /*RECOVERED ERROR. Indicates that the last command completed successfully
+with some recovery action performed by the UFI device. Details may be
+determinable by examining the additional sense bytes and the Information field.
+When multiple recovered errors occur during one command, the choice of which
+error to report is device specific.*/
+    notReady, /*NOT READY. Indicates that the UFI device cannot be accessed. Operator
+intervention may be required to correct this condition.*/
+    mediumError, /*MEDIUM ERROR. Indicates that the command terminated with a non-recovered
+error condition that was probably caused by a flaw in the medium or an error in the
+recorded data. This sense key may also be returned if the UFI device is unable to
+distinguish between a flaw in the medium and a specific hardware failure (sense key
+4h).*/
+    hardwareError, /*HARDWARE ERROR. Indicates that the UFI device detected a non-recoverable
+hardware failure while performing the command or during a self test.*/
+    illegalRequest, /*ILLEGAL REQUEST. Indicates that there was an illegal parameter in the Command
+Packet or in the additional parameters supplied as data for some commands. If the
+UFI device detects an invalid parameter in the Command Packet, then it shall
+terminate the command without altering the medium. If the UFI device detects an
+invalid parameter in the additional parameters supplied as data, then the UFI device
+may have already altered the medium.*/
+    unitAttention, /*UNIT ATTENTION. Indicates that the removable medium may have been changed
+or the UFI device has been reset.*/
+    dataProtect, /*DATA PROTECT. Indicates that a command that writes the medium was attempted
+on a block that is protected from this operation. The write operation was not
+performed.*/
+    blankCheck, /*BLANK CHECK. Indicates that a write-once device or a sequential-access device
+encountered blank medium or format-defined end-of-data indication while reading or
+a write-once device encountered a non-blank medium while writing.*/
+    vendorError, /*Vendor Specific. This sense key is available for reporting vendor specific conditions.*/
+    Reserved0,
+    abortedCommand, /*ABORTED COMMAND. Indicates that the UFI device has aborted the command.
+The host may be able to recover by trying the command again.*/
+    Reserved1,
+    volumeOverflow, /*VOLUME OVERFLOW. Indicates that a buffered peripheral device has reached the
+end-of-partition and data may remain in the buffer that has not been written to the
+medium.*/
+    miscompare, /*MISCOMPARE. Indicates that the source data did not match the data read from the
+medium.*/
+    Reserved2
+} msc_error_code_t;
+
+
+
 static bool RXPackage = false;
 static int32_t cmdLen = 0;
 static uint32_t cmdBuffer[64]; // <- 256 bytes but alligned...
+static msc_error_code_t errorCode = noError;
+static uint8_t errorDesc[2] = {0, 0};
 
 static void change_endian(void* point, int32_t len) {
     int32_t n;
@@ -99,7 +146,7 @@ static void change_endian(void* point, int32_t len) {
 }
 
 static inline msc_status_t msc_SCSIinquiry(uint32_t* buf, int32_t* len) {
-    int32_t n;
+    uint32_t n;
     const uint8_t stdInqData[36] = {
         0x00, 0x80, 0x00, 0x01, 0x1f, 0x00, 0x00, 0x00, //8
         'C', 'B', 'I', '-', '>', 'G', 'C', 'S', //8
@@ -108,7 +155,42 @@ static inline msc_status_t msc_SCSIinquiry(uint32_t* buf, int32_t* len) {
     };
     uint32_t* stdData = (uint32_t*) stdInqData;
     *len = sizeof (stdInqData);
-    for (n = 0; n < 9/* 36 / 4 */; n++) {
+    for (n = 0; n < ((sizeof (stdInqData) + 3) >> 2)/* 36 / 4 */; n++) {
+        buf[n] = stdData[n];
+    }
+
+    return MSC_SEND_DATA;
+}
+
+static inline msc_status_t msc_SCSIsense6(uint32_t* buf, int32_t* len) {
+    uint32_t n;
+    const uint8_t stdSenseData[36] = {
+        0x23, 0x00, 0x00, 0x00, 0x05, 0x1e, 0xf0, 0x00, //8
+        0xff, 0x20, 0x02, 0x00, 0x3f, 0x07, 0x00, 0x00, //8
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //8
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //8
+        0x00, 0x00, 0x00, 0x00 //4
+    }; // */
+    /*const uint8_t stdSenseData[8] = {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 //8
+    }; // */
+    uint32_t* stdData = (uint32_t*) stdSenseData;
+    *len = sizeof (stdSenseData);
+    for (n = 0; n < ((sizeof (stdSenseData) + 3) >> 2)/* 36 / 4 */; n++) {
+        buf[n] = stdData[n];
+    }
+
+    return MSC_SEND_DATA;
+}
+
+static inline msc_status_t msc_SCSIsense10(uint32_t* buf, int32_t* len) {
+    uint32_t n;
+    const uint8_t stdSenseData[8] = {
+        0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 //8
+    };
+    uint32_t* stdData = (uint32_t*) stdSenseData;
+    *len = sizeof (stdSenseData);
+    for (n = 0; n < ((sizeof (stdSenseData) + 3) >> 2)/* 8 / 4 */; n++) {
         buf[n] = stdData[n];
     }
 
@@ -139,18 +221,49 @@ static msc_status_t msc_readCapacity(_msc_cbwheader_t* cmd, int32_t* cmdLen) {
     return MSC_SEND_FAIL;
 }
 
+static inline msc_status_t msc_SCSIsense(uint32_t* buf, int32_t* len) {
+    uint32_t n;
+    uint8_t stdSenseData[18] = {
+        0x70, /* bit 7: validbit; bit 6-0: FixValue 70h */
+        0x00, /* reserved */
+        0x00, /* bit 7-4: reserved; bit 3-0: senseKey */
+        0x00, 0x00, 0x00, 0x00, /* 4-byte Information */
+        10, /* Additional Sense Length (must be 10) */
+        0x00, 0x00, 0x00, 0x00, /* reserved 4-bytes */
+        0x00, /* additional sense code (mandatory) */
+        0x00, /* additional sense code qualifyer (mandatory) */
+        0x00, 0x00, 0x00, 0x00 /* reserved 4-bytes */
+    };
+
+    stdSenseData[2] = errorCode;
+    stdSenseData[12] = errorDesc[0];
+    stdSenseData[13] = errorDesc[1];
+
+    uint32_t* stdData = (uint32_t*) stdSenseData;
+    *len = sizeof (stdSenseData);
+    for (n = 0; n < ((sizeof (stdSenseData) + 3) >> 2)/* 8 / 4 */; n++) {
+        buf[n] = stdData[n];
+    }
+
+    return MSC_SEND_DATA;
+}
+
 static msc_status_t msc_tryExecuteSCSI(_msc_cbwheader_t* cmd, int32_t* cmdLen, int32_t cmdBufferSize) {
     (void) cmdBufferSize;
     if (*cmdLen < (int32_t)sizeof (_msc_cbwheader_t))
         return MSC_STANDBY;
 
+    errorCode = illegalRequest;
+    errorDesc[0] = 0x20;
+    errorDesc[1] = 0;
+
     switch (cmd->CB[0]) {
         case SCSI_TEST_UNIT_READY: return msc_testUnitReady(cmd);
-        case SCSI_REQUEST_SENSE: return MSC_SEND_FAIL;
+        case SCSI_REQUEST_SENSE: return msc_SCSIsense((uint32_t*) cmd, cmdLen);
         case SCSI_FORMAT_UNIT: return MSC_SEND_FAIL;
         case SCSI_INQUIRY: return msc_SCSIinquiry((uint32_t*) cmd, cmdLen);
         case SCSI_MODE_SELECT6: return MSC_SEND_FAIL;
-        case SCSI_MODE_SENSE6: return MSC_SEND_FAIL;
+        case SCSI_MODE_SENSE6: return msc_SCSIsense6((uint32_t*) cmd, cmdLen);
         case SCSI_START_STOP_UNIT: return MSC_SEND_FAIL;
         case SCSI_MEDIA_REMOVAL: return MSC_SEND_FAIL;
         case SCSI_READ_FORMAT_CAPACITIES: return MSC_SEND_FAIL;
@@ -159,7 +272,7 @@ static msc_status_t msc_tryExecuteSCSI(_msc_cbwheader_t* cmd, int32_t* cmdLen, i
         case SCSI_WRITE10: return MSC_SEND_FAIL;
         case SCSI_VERIFY10: return MSC_SEND_FAIL;
         case SCSI_MODE_SELECT10: return MSC_SEND_FAIL;
-        case SCSI_MODE_SENSE10: return MSC_SEND_FAIL;
+        case SCSI_MODE_SENSE10: return msc_SCSIsense10((uint32_t*) cmd, cmdLen);
         default: return MSC_SEND_FAIL;
     }
 }
@@ -213,6 +326,9 @@ void msc_stateMachine(usbd_device *usbd_dev) {
         }
             break;
         case MSC_SEND_OK:
+            errorCode = noError;
+            errorDesc[0] = 0;
+            errorDesc[1] = 0;
         case MSC_SEND_FAIL:
         case MSC_SEND_PHASE_ERROR:
         {
