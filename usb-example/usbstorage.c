@@ -126,13 +126,12 @@ medium.*/
     Reserved2
 } msc_error_code_t;
 
-
-
 static bool RXPackage = false;
 static int32_t cmdLen = 0;
 static uint32_t cmdBuffer[64]; // <- 256 bytes but alligned...
 static msc_error_code_t errorCode = noError;
 static uint8_t errorDesc[2] = {0, 0};
+static uint8_t unitReady = 0;
 
 static void change_endian(void* point, int32_t len) {
     int32_t n;
@@ -145,13 +144,13 @@ static void change_endian(void* point, int32_t len) {
     }
 }
 
-static inline msc_status_t msc_SCSIinquiry(uint32_t* buf, int32_t* len) {
+static inline msc_status_t msc_inquiry(uint32_t* buf, int32_t* len) {
     uint32_t n;
     const uint8_t stdInqData[36] = {
         0x00, 0x80, 0x00, 0x01, 0x1f, 0x00, 0x00, 0x00, //8
-        'C', 'B', 'I', '-', '>', 'G', 'C', 'S', //8
-        'U', 'S', 'B', ' ', 'M', 'S', 'D', '-', 'A', 'c', 'c', 'e', 's', 's', ' ', ' ', //16
-        '1', '.', '0', '0' //4
+        'U', 'S', 'B', ' ', 'D', 'I', 'S', 'K', //8
+        'C', 'B', 'I', '-', '>', 'G', 'C', 'S', '-', '>', 'M', 'S', 'C', ' ', ' ', ' ', //16
+        'P', 'M', 'A', 'P' //4
     };
     uint32_t* stdData = (uint32_t*) stdInqData;
     *len = sizeof (stdInqData);
@@ -162,19 +161,37 @@ static inline msc_status_t msc_SCSIinquiry(uint32_t* buf, int32_t* len) {
     return MSC_SEND_DATA;
 }
 
-static inline msc_status_t msc_SCSIsense6(uint32_t* buf, int32_t* len) {
+static inline msc_status_t msc_sense6(_msc_cbwheader_t* cmd, int32_t* len) {
     uint32_t n;
-    /*const uint8_t stdSenseData[36] = {
+    uint8_t stdSenseData[36] = {
         0x23, 0x00, 0x00, 0x00, 0x05, 0x1e, 0xf0, 0x00, //8
-        0xff, 0x20, 0x02, 0x00, 0x3f, 0x07, 0x00, 0x00, //8
+        0xff, 0x20, 0x02, 0x00, 0x01, 0xe1, 0x00, 0x00, //8
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //8
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //8
         0x00, 0x00, 0x00, 0x00 //4
-    }; // */
-    const uint8_t stdSenseData[8] = {
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 //8
-    }; // */
+    };
+    uint8_t* SectpCylin = &stdSenseData[9];
+    uint16_t* SectSize = (uint16_t*) & stdSenseData[10];
+    uint16_t* CylinCount = (uint16_t*) & stdSenseData[12];
+
+    uint32_t* buf = (uint32_t*) cmd;
     uint32_t* stdData = (uint32_t*) stdSenseData;
+
+    switch (cmd->LUN) {
+        case 0:
+            *SectSize = (uint16_t) ramdisk_getBlockSize();
+            *CylinCount = (uint16_t) (ramdisk_getBlockCount() / (*SectpCylin));
+            break;
+        default:
+            errorCode = illegalRequest;
+            errorDesc[0] = 0x25;
+            errorDesc[1] = 0;
+            return MSC_SEND_FAIL;
+    }
+
+    change_endian(SectSize, sizeof (uint16_t));
+    change_endian(CylinCount, sizeof (uint16_t));
+
     *len = sizeof (stdSenseData);
     for (n = 0; n < ((sizeof (stdSenseData) + 3) >> 2)/* 36 / 4 */; n++) {
         buf[n] = stdData[n];
@@ -183,27 +200,46 @@ static inline msc_status_t msc_SCSIsense6(uint32_t* buf, int32_t* len) {
     return MSC_SEND_DATA;
 }
 
-static inline msc_status_t msc_SCSIsense10(uint32_t* buf, int32_t* len) {
-    uint32_t n;
-    const uint8_t stdSenseData[8] = {
-        0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 //8
-    };
-    uint32_t* stdData = (uint32_t*) stdSenseData;
-    *len = sizeof (stdSenseData);
-    for (n = 0; n < ((sizeof (stdSenseData) + 3) >> 2)/* 8 / 4 */; n++) {
-        buf[n] = stdData[n];
-    }
-
-    return MSC_SEND_DATA;
-}
+//static inline msc_status_t msc_SCSIsense10(uint32_t* buf, int32_t* len) {
+//    uint32_t n;
+//    const uint8_t stdSenseData[36] = {
+//        0x23, 0x00, 0x00, 0x00, 0x05, 0x1e, 0xf0, 0x00, //8
+//        0xff, 0x20, 0x02, 0x00, 0x01, 0xe1, 0x00, 0x00, //8
+//        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //8
+//        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //8
+//        0x00, 0x00, 0x00, 0x00 //4
+//    }; /*/
+//    const uint8_t stdSenseData[8] = {
+//        0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 //8
+//    }; // */
+//    uint32_t* stdData = (uint32_t*) stdSenseData;
+//    *len = sizeof (stdSenseData);
+//    for (n = 0; n < ((sizeof (stdSenseData) + 3) >> 2)/* 8 / 4 */; n++) {
+//        buf[n] = stdData[n];
+//    }
+//
+//    return MSC_SEND_DATA;
+//}
 
 static msc_status_t msc_testUnitReady(_msc_cbwheader_t* cmd) {
-    switch (cmd->LUN) {
-        case 0:
-            if (ramdisk_ready())
-                return MSC_SEND_OK;
-            break;
+    if (0 != unitReady) {
+        switch (cmd->LUN) {
+            case 0:
+                if (ramdisk_ready())
+                    return MSC_SEND_OK;
+                break;
+        }
+
+        errorCode = illegalRequest;
+        errorDesc[0] = 0x25;
+        errorDesc[1] = 0;
+    } else {
+        unitReady = 1;
+        errorCode = unitAttention;
+        errorDesc[0] = 0x28;
+        errorDesc[1] = 0;
     }
+
     return MSC_SEND_FAIL;
 }
 
@@ -216,6 +252,7 @@ static msc_status_t msc_readCapacity(_msc_cbwheader_t* cmd, int32_t* cmdLen) {
             change_endian(&values[0], sizeof (uint32_t));
             change_endian(&values[1], sizeof (uint32_t));
             *cmdLen = 8;
+
             return MSC_SEND_DATA;
     }
     return MSC_SEND_FAIL;
@@ -242,10 +279,23 @@ static inline msc_status_t msc_SCSIsense(uint32_t* buf, int32_t* len) {
     uint32_t* stdData = (uint32_t*) stdSenseData;
     *len = sizeof (stdSenseData);
     for (n = 0; n < ((sizeof (stdSenseData) + 3) >> 2)/* 8 / 4 */; n++) {
+
         buf[n] = stdData[n];
     }
 
     return MSC_SEND_DATA;
+}
+
+static inline msc_status_t msc_mediaRemoval(const uint8_t* cmd, const int8_t cmdlen) {
+    (void) cmdlen;
+    if (0 == cmd[4])
+        return MSC_SEND_OK;
+
+    errorCode = illegalRequest;
+    errorDesc[0] = 0x24;
+    errorDesc[1] = 0;
+
+    return MSC_SEND_FAIL;
 }
 
 static msc_status_t msc_tryExecuteSCSI(_msc_cbwheader_t* cmd, int32_t* cmdLen, int32_t cmdBufferSize) {
@@ -253,34 +303,41 @@ static msc_status_t msc_tryExecuteSCSI(_msc_cbwheader_t* cmd, int32_t* cmdLen, i
     if (*cmdLen < (int32_t)sizeof (_msc_cbwheader_t))
         return MSC_STANDBY;
 
+    switch (cmd->CB[0]) {
+        case SCSI_TEST_UNIT_READY: return msc_testUnitReady(cmd);
+        case SCSI_REQUEST_SENSE: return msc_SCSIsense((uint32_t*) cmd, cmdLen);
+        case SCSI_FORMAT_UNIT: break;
+        case SCSI_INQUIRY: return msc_inquiry((uint32_t*) cmd, cmdLen);
+        case SCSI_MODE_SELECT6: break;
+        case SCSI_MODE_SENSE6: return msc_sense6(cmd, cmdLen);
+        case SCSI_START_STOP_UNIT: break;
+        case SCSI_MEDIA_REMOVAL: return msc_mediaRemoval(cmd->CB, cmd->CBLength);
+        case SCSI_READ_FORMAT_CAPACITIES: break;
+        case SCSI_READ_CAPACITY: return msc_readCapacity(cmd, cmdLen);
+        case SCSI_READ10: break;
+        case SCSI_WRITE10: break;
+        case SCSI_VERIFY10: break;
+        case SCSI_MODE_SELECT10: break;
+        case SCSI_MODE_SENSE10: break; //return msc_SCSIsense10((uint32_t*) cmd, cmdLen);
+        default: break;
+    }
+
     errorCode = illegalRequest;
     errorDesc[0] = 0x20;
     errorDesc[1] = 0;
 
-    switch (cmd->CB[0]) {
-        case SCSI_TEST_UNIT_READY: return msc_testUnitReady(cmd);
-        case SCSI_REQUEST_SENSE: return msc_SCSIsense((uint32_t*) cmd, cmdLen);
-        case SCSI_FORMAT_UNIT: return MSC_SEND_FAIL;
-        case SCSI_INQUIRY: return msc_SCSIinquiry((uint32_t*) cmd, cmdLen);
-        case SCSI_MODE_SELECT6: return MSC_SEND_FAIL;
-        case SCSI_MODE_SENSE6: return msc_SCSIsense6((uint32_t*) cmd, cmdLen);
-        case SCSI_START_STOP_UNIT: return MSC_SEND_FAIL;
-        case SCSI_MEDIA_REMOVAL: return MSC_SEND_FAIL;
-        case SCSI_READ_FORMAT_CAPACITIES: return MSC_SEND_FAIL;
-        case SCSI_READ_CAPACITY: return msc_readCapacity(cmd, cmdLen);
-        case SCSI_READ10: return MSC_SEND_FAIL;
-        case SCSI_WRITE10: return MSC_SEND_FAIL;
-        case SCSI_VERIFY10: return MSC_SEND_FAIL;
-        case SCSI_MODE_SELECT10: return MSC_SEND_FAIL;
-        case SCSI_MODE_SENSE10: return msc_SCSIsense10((uint32_t*) cmd, cmdLen);
-        default: return MSC_SEND_FAIL;
-    }
+    return MSC_SEND_FAIL;
+}
+
+void msc_resetLUNs(void) {
+    unitReady = 0;
 }
 
 void msc_data_rx_cb(usbd_device *usbd_dev, u8 ep) {
+
     uint8_t* buf = (uint8_t*) cmdBuffer;
 
-    gpio_set(GPIOD, GPIO15);
+    gpio_toggle(GPIOD, GPIO15);
 
     buf = &buf[cmdLen];
     cmdLen += usbd_ep_read_packet(usbd_dev, ep, buf, MSC_ENDPOINT_PACKAGE_SIZE);

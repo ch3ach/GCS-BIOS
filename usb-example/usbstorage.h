@@ -23,6 +23,7 @@ extern "C" {
 
     void msc_data_rx_cb(usbd_device *usbd_dev, u8 ep);
     void msc_stateMachine(usbd_device *usbd_dev);
+    void msc_resetLUNs(void);
 
 #ifdef	__cplusplus
 }

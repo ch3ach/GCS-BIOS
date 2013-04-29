@@ -96,6 +96,7 @@ static int usbmanager_control_request(usbd_device *usbd_dev, struct usb_setup_da
         {
             *buf[0] = MSC_IMPLEMENTED_LUNS - 1;
             *len = 1;
+            msc_resetLUNs();
             return USBD_REQ_HANDLED;
         }
     }
