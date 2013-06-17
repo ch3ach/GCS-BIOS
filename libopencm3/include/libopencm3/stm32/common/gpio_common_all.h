@@ -1,4 +1,9 @@
-/** @addtogroup gpio_defines */
+/** @addtogroup gpio_defines
+
+@author @htmlonly &copy; @endhtmlonly 2011 Fergus Noble <fergusnoble@gmail.com>
+@author @htmlonly &copy; @endhtmlonly 2012 Ken Sarkies <ksarkies@internode.on.net>
+
+*/
 
 /*
  * This file is part of the libopencm3 project.
@@ -20,8 +25,11 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* THIS FILE SHOULD NOT BE INCLUDED DIRECTLY, BUT ONLY VIA GPIO.H */
+/* THIS FILE SHOULD NOT BE INCLUDED DIRECTLY, BUT ONLY VIA GPIO.H 
+The order of header inclusion is important. gpio.h includes the device
+specific memorymap.h header before including this header file.*/
 
+#if defined (LIBOPENCM3_GPIO_H) || defined (LIBOPENCM3_GPIO_COMMON_F24_H)
 #ifndef LIBOPENCM3_GPIO_COMMON_ALL_H
 #define LIBOPENCM3_GPIO_COMMON_ALL_H
 
@@ -60,6 +68,8 @@
 #define GPIO_ALL			0xffff
 /**@}*/
 
+BEGIN_DECLS
+
 void gpio_set(u32 gpioport, u16 gpios);
 void gpio_clear(u32 gpioport, u16 gpios);
 u16 gpio_get(u32 gpioport, u16 gpios);
@@ -68,6 +78,11 @@ u16 gpio_port_read(u32 gpioport);
 void gpio_port_write(u32 gpioport, u16 data);
 void gpio_port_config_lock(u32 gpioport, u16 gpios);
 
+END_DECLS
+
 /**@}*/
+#endif
+#else
+#warning "gpio_common_all.h should not be included explicitly, only via gpio.h"
 #endif
 

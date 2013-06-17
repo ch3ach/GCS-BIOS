@@ -1,3 +1,17 @@
+/** @defgroup rtc_defines RTC Defines
+
+@brief <b>Defined Constants and Types for the STM32F1xx Real Time Clock</b>
+
+@ingroup STM32F1xx_defines
+
+@author @htmlonly &copy; @endhtmlonly 2010 Uwe Hermann <uwe@hermann-uwe.de>
+
+@version 1.0.0
+
+@date 4 March 2013
+
+LGPL License Terms @ref lgpl_license
+ */
 /*
  * This file is part of the libopencm3 project.
  *
@@ -15,6 +29,11 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * The F1 RTC is a straight timestamp, a completely different peripheral to
+ * that found in the F2, F3, F4, L1 and F0.
  */
 
 #ifndef LIBOPENCM3_RTC_H

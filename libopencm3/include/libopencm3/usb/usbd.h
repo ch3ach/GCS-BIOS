@@ -1,3 +1,18 @@
+/** @defgroup usb_driver_defines USB Drivers
+
+@brief <b>Defined Constants and Types for the USB Drivers</b>
+
+@ingroup USB_defines
+
+@version 1.0.0
+
+@author @htmlonly &copy; @endhtmlonly 2010 Gareth McMullin <gareth@blacksphere.co.nz>
+
+@date 10 March 2013
+
+LGPL License Terms @ref lgpl_license
+*/
+
 /*
  * This file is part of the libopencm3 project.
  *
@@ -16,6 +31,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+/**@{*/
 
 #ifndef __USBD_H
 #define __USBD_H
@@ -40,18 +57,12 @@ extern const usbd_driver stm32f207_usb_driver;
 #define otgfs_usb_driver stm32f107_usb_driver
 #define otghs_usb_driver stm32f207_usb_driver
 
-/* Static buffer for control transactions:
- * This is defined as weak in the library, applicaiton
- * may provide if a larger buffer is requred. */
-extern u8 usbd_control_buffer[];
-
 /* <usb.c> */
 extern usbd_device *usbd_init(const usbd_driver *driver,
 			      const struct usb_device_descriptor *dev,
 			      const struct usb_config_descriptor *conf,
-			      const char **strings, int num_strings);
-
-extern void usbd_set_control_buffer_size(usbd_device *usbd_dev, u16 size);
+			      const char **strings, int num_strings,
+			      u8 *control_buffer, u16 control_buffer_size);
 
 extern void usbd_register_reset_callback(usbd_device *usbd_dev,
 					 void (*callback)(void));
@@ -100,3 +111,6 @@ extern void usbd_cable_connect(usbd_device *usbd_dev, u8 on);
 END_DECLS
 
 #endif
+
+/**@}*/
+

@@ -1,6 +1,8 @@
 dma_common_f13.o: ../common/dma_common_f13.c \
+ ../../../include/libopencm3/stm32/dma.h \
  ../../../include/libopencm3/stm32/f1/dma.h \
- ../../../include/libopencm3/stm32/f2/memorymap.h \
+ ../../../include/libopencm3/stm32/memorymap.h \
+ ../../../include/libopencm3/stm32/f1/memorymap.h \
  ../../../include/libopencm3/cm3/memorymap.h \
  ../../../include/libopencm3/stm32/common/dma_common_f13.h \
  ../../../include/libopencm3/cm3/common.h \

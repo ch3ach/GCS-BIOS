@@ -1,4 +1,9 @@
-/** @addtogroup dma_defines */
+/** @addtogroup dma_defines
+
+@author @htmlonly &copy; @endhtmlonly 2011 Fergus Noble <fergusnoble@gmail.com>
+@author @htmlonly &copy; @endhtmlonly 2012 Ken Sarkies <ksarkies@internode.on.net>
+
+*/
 /*
  * This file is part of the libopencm3 project.
  *
@@ -19,8 +24,11 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* THIS FILE SHOULD NOT BE INCLUDED DIRECTLY, BUT ONLY VIA DMA.H */
+/* THIS FILE SHOULD NOT BE INCLUDED DIRECTLY, BUT ONLY VIA DMA.H 
+The order of header inclusion is important. dma.h includes the device
+specific memorymap.h header before including this header file.*/
 
+#ifdef LIBOPENCM3_DMA_H
 #ifndef LIBOPENCM3_DMA_COMMON_F24_H
 #define LIBOPENCM3_DMA_COMMON_F24_H
 
@@ -242,20 +250,20 @@ being at the same relative location */
 
 @{*/
 /** Transfer Complete Interrupt Flag */
-#define DMA_ISR_TCIF       		(1 << 5)
+#define DMA_TCIF       		    (1 << 5)
 /** Half Transfer Interrupt Flag */
-#define DMA_ISR_HTIF       		(1 << 4)
+#define DMA_HTIF       		    (1 << 4)
 /** Transfer Error Interrupt Flag */
-#define DMA_ISR_TEIF       		(1 << 3)
+#define DMA_TEIF       		    (1 << 3)
 /** Direct Mode Error Interrupt Flag */
-#define DMA_ISR_DMEIF       	(1 << 2)
+#define DMA_DMEIF       	    (1 << 2)
 /** FIFO Error Interrupt Flag */
-#define DMA_ISR_FEIF       		(1 << 0)
+#define DMA_FEIF       		    (1 << 0)
 /**@}*/
 
 /* Offset within interrupt status register to start of stream interrupt flag field */
 #define DMA_ISR_OFFSET(stream)		(6*(stream & 0x01)+16*((stream & 0x02) >> 1))
-#define DMA_ISR_FLAGS			(DMA_ISR_TCIF | DMA_ISR_HTIF | DMA_ISR_TEIF | DMA_ISR_DMEIF | DMA_ISR_FEIF)
+#define DMA_ISR_FLAGS			    (DMA_TCIF | DMA_HTIF | DMA_TEIF | DMA_DMEIF | DMA_FEIF)
 #define DMA_ISR_MASK(stream)		DMA_ISR_FLAGS << DMA_ISR_OFFSET(stream)
 
 /* --- DMA_LISR values ----------------------------------------------------- */
@@ -568,7 +576,6 @@ void dma_disable_peripheral_increment_mode(u32 dma, u8 channel);
 void dma_enable_fixed_peripheral_increment_mode(u32 dma, u8 stream);
 void dma_enable_circular_mode(u32 dma, u8 stream);
 void dma_channel_select(u32 dma, u8 stream, u32 channel);
-void dma_channel_select(u32 dma, u8 stream, u32 channel);
 void dma_set_memory_burst(u32 dma, u8 stream, u32 burst);
 void dma_set_peripheral_burst(u32 dma, u8 stream, u32 burst);
 void dma_set_initial_target(u32 dma, u8 stream, u8 memory);
@@ -600,5 +607,8 @@ void dma_set_number_of_data(u32 dma, u8 stream, u16 number);
 
 END_DECLS
 /**@}*/
+#endif
+#else
+#warning "dma_common_f24.h should not be included explicitly, only via dma.h"
 #endif
 

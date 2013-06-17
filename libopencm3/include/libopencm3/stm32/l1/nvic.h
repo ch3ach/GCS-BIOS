@@ -15,8 +15,8 @@
 
 #define NVIC_WWDG_IRQ 0
 #define NVIC_PVD_IRQ 1
-#define NVIC_TAMPER_IRQ 2
-#define NVIC_RTC_IRQ 3
+#define NVIC_TAMPER_STAMP_IRQ 2
+#define NVIC_RTC_WKUP_IRQ 3
 #define NVIC_FLASH_IRQ 4
 #define NVIC_RCC_IRQ 5
 #define NVIC_EXTI0_IRQ 6
@@ -55,11 +55,23 @@
 #define NVIC_USART3_IRQ 39
 #define NVIC_EXTI15_10_IRQ 40
 #define NVIC_RTC_ALARM_IRQ 41
-#define NVIC_USB_WAKEUP_IRQ 42
+#define NVIC_USB_FS_WAKEUP_IRQ 42
 #define NVIC_TIM6_IRQ 43
 #define NVIC_TIM7_IRQ 44
+#define NVIC_SDIO_IRQ 45
+#define NVIC_TIM5_IRQ 46
+#define NVIC_SPI3_IRQ 47
+#define NVIC_UART4_IRQ 48
+#define NVIC_UART5_IRQ 49
+#define NVIC_DMA2_CH1_IRQ 50
+#define NVIC_DMA2_CH2_IRQ 51
+#define NVIC_DMA2_CH3_IRQ 52
+#define NVIC_DMA2_CH4_IRQ 53
+#define NVIC_DMA2_CH5_IRQ 54
+#define NVIC_AES_IRQ 55
+#define NVIC_COMP_ACQ_IRQ 56
 
-#define NVIC_IRQ_COUNT 45
+#define NVIC_IRQ_COUNT 57
 
 /**@}*/
 
@@ -74,8 +86,8 @@ BEGIN_DECLS
 
 void WEAK wwdg_isr(void);
 void WEAK pvd_isr(void);
-void WEAK tamper_isr(void);
-void WEAK rtc_isr(void);
+void WEAK tamper_stamp_isr(void);
+void WEAK rtc_wkup_isr(void);
 void WEAK flash_isr(void);
 void WEAK rcc_isr(void);
 void WEAK exti0_isr(void);
@@ -114,9 +126,21 @@ void WEAK usart2_isr(void);
 void WEAK usart3_isr(void);
 void WEAK exti15_10_isr(void);
 void WEAK rtc_alarm_isr(void);
-void WEAK usb_wakeup_isr(void);
+void WEAK usb_fs_wakeup_isr(void);
 void WEAK tim6_isr(void);
 void WEAK tim7_isr(void);
+void WEAK sdio_isr(void);
+void WEAK tim5_isr(void);
+void WEAK spi3_isr(void);
+void WEAK uart4_isr(void);
+void WEAK uart5_isr(void);
+void WEAK dma2_ch1_isr(void);
+void WEAK dma2_ch2_isr(void);
+void WEAK dma2_ch3_isr(void);
+void WEAK dma2_ch4_isr(void);
+void WEAK dma2_ch5_isr(void);
+void WEAK aes_isr(void);
+void WEAK comp_acq_isr(void);
 
 END_DECLS
 

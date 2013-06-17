@@ -1,5 +1,7 @@
 dma_common_f24.o: ../common/dma_common_f24.c \
- ../../../include/libopencm3/stm32/f4/dma.h \
+ ../../../include/libopencm3/stm32/dma.h \
+ ../../../include/libopencm3/stm32/f2/dma.h \
+ ../../../include/libopencm3/stm32/memorymap.h \
  ../../../include/libopencm3/stm32/f2/memorymap.h \
  ../../../include/libopencm3/cm3/memorymap.h \
  ../../../include/libopencm3/stm32/common/dma_common_f24.h \

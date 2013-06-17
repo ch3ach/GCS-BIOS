@@ -18,7 +18,7 @@ static const struct usb_device_descriptor dev = {
     .bDeviceClass = USB_CLASS_MISCELLANEOUS,
     .bDeviceSubClass = 0x02,
     .bDeviceProtocol = 0x01,
-    .bMaxPacketSize0 = 64,
+    .bMaxPacketSize0 = USBMANAGER_FIFO0_SIZE,
     .idVendor = 0x0483,
     .idProduct = 0x5740,
     .bcdDevice = 0x0200,
@@ -63,6 +63,7 @@ static const char *usb_strings[] = {
 };
 
 static usbd_device *usbd_dev;
+static uint32_t controlBuffer[(128 / sizeof (uint32_t))];
 
 static int usbmanager_control_request(usbd_device *usbd_dev, struct usb_setup_data *req, u8 **buf,
         u16 *len, void (**complete)(usbd_device *usbd_dev, struct usb_setup_data *req)) {
@@ -131,7 +132,7 @@ static void usbmanager_set_config(usbd_device *usbd_dev, u16 wValue) {
 }
 
 void usbmanager_init(void) {
-    usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config, usb_strings, 3);
+    usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config, usb_strings, 3, (uint8_t*) controlBuffer, 128);
     usbd_register_set_config_callback(usbd_dev, usbmanager_set_config);
 }
 

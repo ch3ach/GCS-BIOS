@@ -29,21 +29,14 @@
 
 /* Symbols exported by the linker script(s): */
 extern unsigned _data_loadaddr, _data, _edata, _ebss, _stack;
+typedef void (*funcp_t) (void);
+extern funcp_t __preinit_array_start, __preinit_array_end;
+extern funcp_t __init_array_start, __init_array_end;
+extern funcp_t __fini_array_start, __fini_array_end;
 
 void main(void);
 void blocking_handler(void);
 void null_handler(void);
-
-void WEAK reset_handler(void);
-void WEAK nmi_handler(void);
-void WEAK hard_fault_handler(void);
-void WEAK mem_manage_handler(void);
-void WEAK bus_fault_handler(void);
-void WEAK usage_fault_handler(void);
-void WEAK sv_call_handler(void);
-void WEAK debug_monitor_handler(void);
-void WEAK pend_sv_handler(void);
-void WEAK sys_tick_handler(void);
 
 __attribute__ ((section(".vectors")))
 vector_table_t vector_table = {
@@ -66,8 +59,7 @@ vector_table_t vector_table = {
 void WEAK __attribute__ ((naked)) reset_handler(void)
 {
 	volatile unsigned *src, *dest;
-
-	__asm__("MSR msp, %0" : : "r"(&_stack));
+	funcp_t *fp;
 
 	for (src = &_data_loadaddr, dest = &_data; dest < &_edata; src++, dest++)
 		*dest = *src;
@@ -75,11 +67,21 @@ void WEAK __attribute__ ((naked)) reset_handler(void)
 	while (dest < &_ebss)
 		*dest++ = 0;
 
+	/* Constructors. */
+	for (fp = &__preinit_array_start; fp < &__preinit_array_end; fp++)
+	    (*fp)();
+	for (fp = &__init_array_start; fp < &__init_array_end; fp++)
+	    (*fp)();
+
 	/* might be provided by platform specific vector.c */
 	pre_main();
 
 	/* Call the application's entry point. */
 	main();
+
+	/* Destructors. */
+	for (fp = &__fini_array_start; fp < &__fini_array_end; fp++)
+	    (*fp)();
 }
 
 void blocking_handler(void)

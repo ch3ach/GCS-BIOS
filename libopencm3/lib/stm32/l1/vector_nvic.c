@@ -14,8 +14,8 @@
 
 #pragma weak wwdg_isr = blocking_handler
 #pragma weak pvd_isr = blocking_handler
-#pragma weak tamper_isr = blocking_handler
-#pragma weak rtc_isr = blocking_handler
+#pragma weak tamper_stamp_isr = blocking_handler
+#pragma weak rtc_wkup_isr = blocking_handler
 #pragma weak flash_isr = blocking_handler
 #pragma weak rcc_isr = blocking_handler
 #pragma weak exti0_isr = blocking_handler
@@ -54,9 +54,21 @@
 #pragma weak usart3_isr = blocking_handler
 #pragma weak exti15_10_isr = blocking_handler
 #pragma weak rtc_alarm_isr = blocking_handler
-#pragma weak usb_wakeup_isr = blocking_handler
+#pragma weak usb_fs_wakeup_isr = blocking_handler
 #pragma weak tim6_isr = blocking_handler
 #pragma weak tim7_isr = blocking_handler
+#pragma weak sdio_isr = blocking_handler
+#pragma weak tim5_isr = blocking_handler
+#pragma weak spi3_isr = blocking_handler
+#pragma weak uart4_isr = blocking_handler
+#pragma weak uart5_isr = blocking_handler
+#pragma weak dma2_ch1_isr = blocking_handler
+#pragma weak dma2_ch2_isr = blocking_handler
+#pragma weak dma2_ch3_isr = blocking_handler
+#pragma weak dma2_ch4_isr = blocking_handler
+#pragma weak dma2_ch5_isr = blocking_handler
+#pragma weak aes_isr = blocking_handler
+#pragma weak comp_acq_isr = blocking_handler
 
 /**@}*/
 
@@ -68,8 +80,8 @@
 #define IRQ_HANDLERS \
     [NVIC_WWDG_IRQ] = wwdg_isr, \
     [NVIC_PVD_IRQ] = pvd_isr, \
-    [NVIC_TAMPER_IRQ] = tamper_isr, \
-    [NVIC_RTC_IRQ] = rtc_isr, \
+    [NVIC_TAMPER_STAMP_IRQ] = tamper_stamp_isr, \
+    [NVIC_RTC_WKUP_IRQ] = rtc_wkup_isr, \
     [NVIC_FLASH_IRQ] = flash_isr, \
     [NVIC_RCC_IRQ] = rcc_isr, \
     [NVIC_EXTI0_IRQ] = exti0_isr, \
@@ -108,6 +120,18 @@
     [NVIC_USART3_IRQ] = usart3_isr, \
     [NVIC_EXTI15_10_IRQ] = exti15_10_isr, \
     [NVIC_RTC_ALARM_IRQ] = rtc_alarm_isr, \
-    [NVIC_USB_WAKEUP_IRQ] = usb_wakeup_isr, \
+    [NVIC_USB_FS_WAKEUP_IRQ] = usb_fs_wakeup_isr, \
     [NVIC_TIM6_IRQ] = tim6_isr, \
-    [NVIC_TIM7_IRQ] = tim7_isr
+    [NVIC_TIM7_IRQ] = tim7_isr, \
+    [NVIC_SDIO_IRQ] = sdio_isr, \
+    [NVIC_TIM5_IRQ] = tim5_isr, \
+    [NVIC_SPI3_IRQ] = spi3_isr, \
+    [NVIC_UART4_IRQ] = uart4_isr, \
+    [NVIC_UART5_IRQ] = uart5_isr, \
+    [NVIC_DMA2_CH1_IRQ] = dma2_ch1_isr, \
+    [NVIC_DMA2_CH2_IRQ] = dma2_ch2_isr, \
+    [NVIC_DMA2_CH3_IRQ] = dma2_ch3_isr, \
+    [NVIC_DMA2_CH4_IRQ] = dma2_ch4_isr, \
+    [NVIC_DMA2_CH5_IRQ] = dma2_ch5_isr, \
+    [NVIC_AES_IRQ] = aes_isr, \
+    [NVIC_COMP_ACQ_IRQ] = comp_acq_isr

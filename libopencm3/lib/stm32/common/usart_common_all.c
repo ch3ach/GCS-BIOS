@@ -1,18 +1,14 @@
 /** @addtogroup usart_file
 
-@version 1.0.0
-
 @author @htmlonly &copy; @endhtmlonly 2009 Uwe Hermann <uwe@hermann-uwe.de>
-
-@date 30 August 2012
 
 This library supports the USART/UART in the STM32F series
 of ARM Cortex Microcontrollers by ST Microelectronics.
 
 Devices can have up to 3 USARTs and 2 UARTs.
 
-LGPL License Terms @ref lgpl_license
- */
+*/
+
 /*
  * This file is part of the libopencm3 project.
  *
@@ -40,12 +36,10 @@ LGPL License Terms @ref lgpl_license
 /*-----------------------------------------------------------------------------*/
 /** @brief USART Set Baudrate.
 
-The baud rate is computed from the APB high-speed prescaler clock (for USART1)
+The baud rate is computed from the APB high-speed prescaler clock (for USART1/6)
 or the APB low-speed prescaler clock (for other USARTs). These values must
 be correctly set before calling this function (refer to the rcc_clock_setup-*
 functions in RCC).
-
-@todo Add support for USART6 and oversampling in F2/F4
 
 @param[in] usart unsigned 32 bit. USART block register address base @ref usart_reg_base
 @param[in] baud unsigned 32 bit. Baud rate specified in Hz.
@@ -55,19 +49,16 @@ void usart_set_baudrate(u32 usart, u32 baud)
 {
 	u32 clock = rcc_ppre1_frequency;
 
-//#ifdef STM32F1
-	if (usart == USART1) {
-		clock = rcc_ppre2_frequency;
-	}
-/* This has to be added for F2 when it get's support for USART6 */
-/*
-#else
+#if defined STM32F2 || defined STM32F4
 	if ((usart == USART1) ||
 	    (usart == USART6)) {
 		clock = rcc_ppre2_frequency;
 	}
+#else
+	if (usart == USART1) {
+		clock = rcc_ppre2_frequency;
+	}
 #endif
-*/
 
 	/*
 	 * Yes it is as simple as that. The reference manual is

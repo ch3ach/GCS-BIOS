@@ -6,10 +6,6 @@
 
 @version 1.0.0
 
-@author @htmlonly &copy; @endhtmlonly 2009 Uwe Hermann <uwe@hermann-uwe.de>
-@author @htmlonly &copy; @endhtmlonly 2012 Piotr Esden-Tempski <piotr@esden.net>
-@author @htmlonly &copy; @endhtmlonly 2012 Ken Sarkies <ksarkies@internode.on.net>
-
 @date 1 July 2012
 
 LGPL License Terms @ref lgpl_license
@@ -929,7 +925,7 @@ BEGIN_DECLS
 
 void gpio_set_mode(u32 gpioport, u8 mode, u8 cnf, u16 gpios);
 void gpio_set_eventout(u8 evoutport, u8 evoutpin);
-void gpio_primary_remap(u8 swjenable, u32 maps);
+void gpio_primary_remap(u32 swjenable, u32 maps);
 void gpio_secondary_remap(u32 maps);
 
 END_DECLS

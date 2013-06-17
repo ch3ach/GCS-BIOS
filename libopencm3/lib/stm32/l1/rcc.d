@@ -11,6 +11,7 @@ rcc.o: rcc.c ../../../include/libopencm3/stm32/l1/rcc.h \
  /usr/bin/../lib/gcc/arm-none-eabi/4.7.3/../../../../arm-none-eabi/include/machine/ieeefp.h \
  /usr/bin/../lib/gcc/arm-none-eabi/4.7.3/../../../../arm-none-eabi/include/sys/features.h \
  /usr/bin/../lib/gcc/arm-none-eabi/4.7.3/include/stdbool.h \
- ../../../include/libopencm3/stm32/l1/pwr.h \
  ../../../include/libopencm3/stm32/pwr.h \
+ ../../../include/libopencm3/stm32/l1/pwr.h \
+ ../../../include/libopencm3/stm32/common/pwr_common_all.h \
  ../../../include/libopencm3/stm32/l1/flash.h

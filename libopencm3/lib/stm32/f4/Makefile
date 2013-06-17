@@ -19,22 +19,31 @@
 
 LIBNAME		= libopencm3_stm32f4
 
-PREFIX	?= arm-none-eabi
-# PREFIX		?= arm-elf
+PREFIX	        ?= arm-none-eabi
+# PREFIX	?= arm-elf
 CC		= $(PREFIX)-gcc
 AR		= $(PREFIX)-ar
-CFLAGS		= -Os -g -Wall -Wextra -I../../../include -fno-common \
+CFLAGS		= -Os -g \
+		  -Wall -Wextra -Wimplicit-function-declaration \
+		  -Wredundant-decls -Wmissing-prototypes -Wstrict-prototypes \
+		  -Wundef -Wshadow \
+		  -I../../../include -fno-common \
 		  -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 \
 		  -Wstrict-prototypes \
 		  -ffunction-sections -fdata-sections -MD -DSTM32F4
 # ARFLAGS	= rcsv
 ARFLAGS		= rcs
-OBJS		= rcc.o gpio.o flash.o exti2.o pwr.o timer.o \
-		  usb.o usb_standard.o usb_control.o usb_fx07_common.o usb_f107.o \
-		  usb_f207.o adc.o dma.o \
-		  gpio_common_all.o gpio_common_f24.o dma_common_f24.o spi_common_all.o \
-		  dac_common_all.o usart_common_all.o iwdg_common_all.o i2c_common_all.o \
-		  crc_common_all.o
+
+OBJS		= adc.o can.o gpio.o exti2.o flash.o pwr.o rcc.o
+
+OBJS            += crc_common_all.o dac_common_all.o dma_common_f24.o \
+                   gpio_common_all.o gpio_common_f24.o i2c_common_all.o \
+                   iwdg_common_all.o pwr_common_all.o rtc_common_bcd.o \
+                   spi_common_all.o timer_common_all.o timer_common_f24.o \
+                   usart_common_all.o
+
+OBJS            += usb.o usb_standard.o usb_control.o usb_fx07_common.o \
+		   usb_f107.o usb_f207.o
 
 VPATH += ../../usb:../:../../cm3:../common
 

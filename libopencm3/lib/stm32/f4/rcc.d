@@ -13,5 +13,5 @@ rcc.o: rcc.c ../../../include/libopencm3/cm3/assert.h \
  ../../../include/libopencm3/stm32/f4/memorymap.h \
  ../../../include/libopencm3/cm3/memorymap.h \
  ../../../include/libopencm3/stm32/f4/pwr.h \
- ../../../include/libopencm3/stm32/pwr.h \
+ ../../../include/libopencm3/stm32/common/pwr_common_all.h \
  ../../../include/libopencm3/stm32/f4/flash.h

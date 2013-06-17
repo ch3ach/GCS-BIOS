@@ -1,4 +1,10 @@
-/** @addtogroup dma_defines */
+/** @addtogroup dma_defines 
+
+@author @htmlonly &copy; @endhtmlonly 2010 Thomas Otto <tommi@viadmin.org>
+@author @htmlonly &copy; @endhtmlonly 2012 Piotr Esden-Tempski <piotr@esden.net>
+
+*/
+
 /*
  * This file is part of the libopencm3 project.
  *
@@ -21,6 +27,11 @@
 
 /**@{*/
 
+/* THIS FILE SHOULD NOT BE INCLUDED DIRECTLY, BUT ONLY VIA DMA.H 
+The order of header inclusion is important. dma.h includes the device
+specific memorymap.h header before including this header file.*/
+
+#ifdef LIBOPENCM3_DMA_H
 #ifndef LIBOPENCM3_DMA_COMMON_F13_H
 #define LIBOPENCM3_DMA_COMMON_F13_H
 
@@ -149,8 +160,8 @@
 #define DMA_ISR_MASK(channel)		DMA_FLAGS << DMA_FLAG_OFFSET(channel)
 
 /* TEIF: Transfer error interrupt flag */
-#define DMA_ISR_TEIF_BIT       		DMA_ISR_TEIF
-#define DMA_ISR_TEIF(channel)		(DMA_ISR_TEIF_BIT << DMA_FLAG_OFFSET(channel)))
+#define DMA_ISR_TEIF_BIT       		DMA_TEIF
+#define DMA_ISR_TEIF(channel)		(DMA_ISR_TEIF_BIT << (DMA_FLAG_OFFSET(channel)))
 
 #define DMA_ISR_TEIF1			DMA_ISR_TEIF(DMA_CHANNEL1)
 #define DMA_ISR_TEIF2			DMA_ISR_TEIF(DMA_CHANNEL2)
@@ -162,7 +173,7 @@
 
 /* HTIF: Half transfer interrupt flag */
 #define DMA_ISR_HTIF_BIT       		DMA_HTIF
-#define DMA_ISR_HTIF(channel)		(DMA_ISR_HTIF_BIT << DMA_FLAG_OFFSET(channel)))
+#define DMA_ISR_HTIF(channel)		(DMA_ISR_HTIF_BIT << (DMA_FLAG_OFFSET(channel)))
 
 #define DMA_ISR_HTIF1			DMA_ISR_HTIF(DMA_CHANNEL1)
 #define DMA_ISR_HTIF2			DMA_ISR_HTIF(DMA_CHANNEL2)
@@ -384,5 +395,9 @@ void dma_set_number_of_data(u32 dma, u8 channel, u16 number);
 END_DECLS
 
 #endif
+#else
+#warning "dma_common_f13.h should not be included explicitly, only via dma.h"
+#endif
+
 /**@}*/
 

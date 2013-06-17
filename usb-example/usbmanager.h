@@ -16,6 +16,8 @@
 //#define USB_CONFIG_ATTR_SELF_POWERED                0xC0
 //#define USB_CONFIG_ATTR_REMOTE_WAKEUP               0x20
 
+#define USBMANAGER_FIFO0_SIZE                   64
+
 #ifdef	__cplusplus
 extern "C" {
 #endif

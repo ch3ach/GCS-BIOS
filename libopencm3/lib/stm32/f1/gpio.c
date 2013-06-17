@@ -73,7 +73,6 @@ LGPL License Terms @ref lgpl_license
  */
 
 #include <libopencm3/stm32/gpio.h>
-#include <libopencm3/stm32/common/gpio_common_all.h>
 
 /**@{*/
 
@@ -162,9 +161,9 @@ value cannot be ascertained from the hardware.
 		@ref afio_remap_usart3. For connectivity line devices only @ref afio_remap_cld are
         also available.
 */
-void gpio_primary_remap(u8 swjdisable, u32 maps)
+void gpio_primary_remap(u32 swjdisable, u32 maps)
 {
-	AFIO_MAPR |= swjdisable | (maps & 0x1FFFFF);
+	AFIO_MAPR |= (swjdisable & AFIO_MAPR_SWJ_MASK) | (maps & 0x1FFFFF);
 }
 
 /*-----------------------------------------------------------------------------*/

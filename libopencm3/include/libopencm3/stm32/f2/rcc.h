@@ -426,7 +426,7 @@
 #define RCC_CSR_SFTRSTF				(1 << 28)
 #define RCC_CSR_PORRSTF				(1 << 27)
 #define RCC_CSR_PINRSTF				(1 << 26)
-#define RCC_CSR_BORRSTF				(1 << 26)
+#define RCC_CSR_BORRSTF				(1 << 25)
 #define RCC_CSR_RMVF				(1 << 24)
 #define RCC_CSR_LSIRDY				(1 << 1)
 #define RCC_CSR_LSION				(1 << 0)
@@ -507,7 +507,7 @@ void rcc_set_hpre(u32 hpre);
 void rcc_set_rtcpre(u32 rtcpre);
 void rcc_set_main_pll_hsi(u32 pllm, u32 plln, u32 pllp, u32 pllq);
 void rcc_set_main_pll_hse(u32 pllm, u32 plln, u32 pllp, u32 pllq);
-u32 rcc_get_system_clock_source(int i);
+u32 rcc_system_clock_source(void);
 void rcc_clock_setup_hse_3v3(const clock_scale_t *clock);
 void rcc_backupdomain_reset(void);
 

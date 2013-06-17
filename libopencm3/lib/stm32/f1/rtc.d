@@ -1,4 +1,5 @@
-rtc.o: rtc.c ../../../include/libopencm3/stm32/f1/rcc.h \
+rtc.o: rtc.c ../../../include/libopencm3/stm32/rcc.h \
+ ../../../include/libopencm3/stm32/f1/rcc.h \
  ../../../include/libopencm3/stm32/memorymap.h \
  ../../../include/libopencm3/stm32/f1/memorymap.h \
  ../../../include/libopencm3/cm3/memorymap.h \
@@ -11,5 +12,8 @@ rtc.o: rtc.c ../../../include/libopencm3/stm32/f1/rcc.h \
  /usr/bin/../lib/gcc/arm-none-eabi/4.7.3/../../../../arm-none-eabi/include/machine/ieeefp.h \
  /usr/bin/../lib/gcc/arm-none-eabi/4.7.3/../../../../arm-none-eabi/include/sys/features.h \
  /usr/bin/../lib/gcc/arm-none-eabi/4.7.3/include/stdbool.h \
+ ../../../include/libopencm3/stm32/rtc.h \
  ../../../include/libopencm3/stm32/f1/rtc.h \
- ../../../include/libopencm3/stm32/pwr.h
+ ../../../include/libopencm3/stm32/pwr.h \
+ ../../../include/libopencm3/stm32/f1/pwr.h \
+ ../../../include/libopencm3/stm32/common/pwr_common_all.h

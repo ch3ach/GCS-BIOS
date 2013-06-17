@@ -1,4 +1,5 @@
 adc.o: adc.c ../../../include/libopencm3/stm32/f4/adc.h \
+ ../../../include/libopencm3/stm32/memorymap.h \
  ../../../include/libopencm3/stm32/f4/memorymap.h \
  ../../../include/libopencm3/cm3/memorymap.h \
  ../../../include/libopencm3/cm3/common.h \

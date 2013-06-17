@@ -1,13 +1,10 @@
-/** @defgroup STM32F1xx_dma_defines DMA Defines
+/** @defgroup dma_defines DMA Defines
 
 @ingroup STM32F1xx_defines
 
 @brief Defined Constants and Types for the STM32F1xx DMA Controller
 
 @version 1.0.0
-
-@author @htmlonly &copy; @endhtmlonly 2010 Thomas Otto <tommi@viadmin.org>
-@author @htmlonly &copy; @endhtmlonly 2012 Ken Sarkies <ksarkies@internode.on.net>
 
 @date 30 November 2012
 
@@ -34,7 +31,7 @@ LGPL License Terms @ref lgpl_license
 #ifndef LIBOPENCM3_DMA_H
 #define LIBOPENCM3_DMA_H
 
-#include <libopencm3/stm32/f2/memorymap.h>
+#include <libopencm3/stm32/memorymap.h>
 #include <libopencm3/stm32/common/dma_common_f13.h>
 
 #endif

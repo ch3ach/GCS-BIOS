@@ -1,4 +1,8 @@
-/** @addtogroup dac_defines */
+/** @addtogroup dac_defines
+
+@author @htmlonly &copy; @endhtmlonly 2012 Felix Held <felix-libopencm3@felixheld.de>
+
+*/
 
 /*
  * This file is part of the libopencm3 project.
@@ -21,6 +25,11 @@
 
 /**@{*/
 
+/* THIS FILE SHOULD NOT BE INCLUDED DIRECTLY, BUT ONLY VIA DAC.H 
+The order of header inclusion is important. dac.h includes the device
+specific memorymap.h header before including this header file.*/
+
+#ifdef LIBOPENCM3_DAC_H
 #ifndef LIBOPENCM3_DAC_COMMON_ALL_H
 #define LIBOPENCM3_DAC_COMMON_ALL_H
 
@@ -392,12 +401,16 @@ void dac_set_trigger_source(u32 dac_trig_src);
 void dac_set_waveform_generation(u32 dac_wave_ens);
 void dac_disable_waveform_generation(data_channel dac_channel);
 void dac_set_waveform_characteristics(u32 dac_mamp);
-void dac_load_data_buffer_single(u32 dac_data, data_align dac_data_format, data_channel dac_channel);
-void dac_load_data_buffer_dual(u32 dac_data1, u32 dac_data2, data_align dac_data_format);
+void dac_load_data_buffer_single(u16 dac_data, data_align dac_data_format, data_channel dac_channel);
+void dac_load_data_buffer_dual(u16 dac_data1, u16 dac_data2, data_align dac_data_format);
 void dac_software_trigger(data_channel dac_channel);
 
 END_DECLS
 
 #endif
+#else
+#warning "dac_common_all.h should not be included explicitly, only via dac.h"
+#endif
+
 /**@}*/
 

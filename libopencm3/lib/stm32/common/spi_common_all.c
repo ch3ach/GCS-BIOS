@@ -1,11 +1,7 @@
 /** @addtogroup spi_file
 
-@version 1.0.0
-
 @author @htmlonly &copy; @endhtmlonly 2009 Uwe Hermann <uwe@hermann-uwe.de>
 @author @htmlonly &copy; @endhtmlonly 2012 Ken Sarkies <ksarkies@internode.on.net>
-
-@date 15 October 2012
 
 Devices can have up to three SPI peripherals. The common 4-wire full-duplex
 mode of operation is supported, along with 3-wire variants using unidirectional
@@ -32,8 +28,8 @@ LSB first.
 
 @todo need additional functions to aid ISRs in retrieving status
 
-LGPL License Terms @ref lgpl_license
- */
+*/
+
 /*
  * This file is part of the libopencm3 project.
  *
@@ -163,9 +159,6 @@ void spi_enable(u32 spi)
 
 The SPI peripheral is disabled.
 
-@todo  Follow procedure from section 23.3.8 in the TRM. 
-(possibly create a "clean disable" function separately)
-
 @param[in] spi Unsigned int32. SPI peripheral identifier @ref spi_reg_base.
 */
 
@@ -176,6 +169,38 @@ void spi_disable(u32 spi)
 	reg32 = SPI_CR1(spi);
 	reg32 &= ~(SPI_CR1_SPE); /* Disable SPI. */
 	SPI_CR1(spi) = reg32;
+}
+
+/*-----------------------------------------------------------------------------*/
+/** @brief SPI Clean Disable.
+
+Disable the SPI peripheral according to the procedure in section 23.3.8 of the
+reference manual.  This prevents corruption of any ongoing transfers and
+prevents the BSY flag from becoming unreliable.
+
+@param[in] spi Unsigned int32. SPI peripheral identifier @ref spi_reg_base.
+@returns data Unsigned int16. 8 or 16 bit data from final read.
+*/
+
+u16 spi_clean_disable(u32 spi)
+{
+	/* Wait to receive last data */
+	while (!(SPI_SR(spi) & SPI_SR_RXNE))
+		;
+
+	u16 data = SPI_DR(spi);
+
+	/* Wait to transmit last data */
+	while (!(SPI_SR(spi) & SPI_SR_TXE))
+		;
+
+	/* Wait until not busy */
+	while (SPI_SR(spi) & SPI_SR_BSY)
+		;
+
+	SPI_CR1(spi) &= ~SPI_CR1_SPE;
+
+	return data;
 }
 
 /*-----------------------------------------------------------------------------*/

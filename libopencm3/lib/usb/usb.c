@@ -1,3 +1,18 @@
+/** @defgroup usb_drivers_file Generic USB Drivers
+
+@ingroup USB
+
+@brief <b>Generic USB Drivers</b>
+
+@version 1.0.0
+
+@author @htmlonly &copy; @endhtmlonly 2010 Gareth McMullin <gareth@blacksphere.co.nz>
+
+@date 10 March 2013
+
+LGPL License Terms @ref lgpl_license
+*/
+
 /*
  * This file is part of the libopencm3 project.
  *
@@ -17,11 +32,11 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**@{*/
+
 #include <string.h>
 #include <libopencm3/usb/usbd.h>
 #include "usb_private.h"
-
-u8 usbd_control_buffer[128] __attribute__((weak));
 
 /**
  * Main initialization entry point.
@@ -39,12 +54,17 @@ u8 usbd_control_buffer[128] __attribute__((weak));
  *             array is determined by the bNumConfigurations field in the
  *             device descriptor.
  * @param strings TODO
+ * @param control_buffer Pointer to array that would hold the data
+ *                       received during control requests with DATA
+ *                       stage
+ * @param control_buffer_size Size of control_buffer
  * @return Zero on success (currently cannot fail).
  */
 usbd_device *usbd_init(const usbd_driver *driver,
 	      	       const struct usb_device_descriptor *dev,
 	      	       const struct usb_config_descriptor *conf,
-		       const char **strings, int num_strings)
+		       const char **strings, int num_strings,
+		       u8 *control_buffer, u16 control_buffer_size)
 {
 	usbd_device *usbd_dev;
 
@@ -55,8 +75,8 @@ usbd_device *usbd_init(const usbd_driver *driver,
 	usbd_dev->config = conf;
 	usbd_dev->strings = strings;
 	usbd_dev->num_strings = num_strings;
-	usbd_dev->ctrl_buf = usbd_control_buffer;
-	usbd_dev->ctrl_buf_len = sizeof(usbd_control_buffer);
+	usbd_dev->ctrl_buf = control_buffer;
+	usbd_dev->ctrl_buf_len = control_buffer_size;
 
 	usbd_dev->user_callback_ctr[0][USB_TRANSACTION_SETUP] =
 	    _usbd_control_setup;
@@ -88,11 +108,6 @@ void usbd_register_resume_callback(usbd_device *usbd_dev,
 void usbd_register_sof_callback(usbd_device *usbd_dev, void (*callback)(void))
 {
 	usbd_dev->user_callback_sof = callback;
-}
-
-void usbd_set_control_buffer_size(usbd_device *usbd_dev, u16 size)
-{
-	usbd_dev->ctrl_buf_len = size;
 }
 
 void _usbd_reset(usbd_device *usbd_dev)
@@ -150,3 +165,6 @@ void usbd_ep_nak_set(usbd_device *usbd_dev, u8 addr, u8 nak)
 {
 	usbd_dev->driver->ep_nak_set(usbd_dev, addr, nak);
 }
+
+/**@}*/
+
