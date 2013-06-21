@@ -235,7 +235,7 @@ static msc_status_t msc_testUnitReady(_msc_cbwheader_t* cmd) {
         errorDesc[1] = 0;
     } else {
         unitReady = 1;
-        errorCode = unitAttention;
+        errorCode = unitAttention;  //should be 0x06
         errorDesc[0] = 0x28;
         errorDesc[1] = 0;
     }
