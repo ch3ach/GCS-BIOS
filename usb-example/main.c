@@ -6,6 +6,7 @@
 #include "messagehistory.h"
 #include "cdcacm.h"
 #include "usbmanager.h"
+#include "led.h"
 
 typedef enum {
     INTERPRETER_WAIT,
@@ -30,12 +31,13 @@ int main(void) {
             GPIO9 | GPIO11 | GPIO12);
     gpio_set_af(GPIOA, GPIO_AF10, GPIO9 | GPIO11 | GPIO12);
 
-    gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
-            GPIO12 | GPIO13 | GPIO14 | GPIO15);
-    gpio_clear(GPIOD, GPIO12 | GPIO13 | GPIO14 | GPIO15);
+    led_init();
+    //gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
+    //        GPIO12 | GPIO13 | GPIO14 | GPIO15);
+    //gpio_clear(GPIOD, GPIO12 | GPIO13 | GPIO14 | GPIO15);
 
-    gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0);
-    gpio_clear(GPIOC, GPIO0);
+    //gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0);
+    //gpio_clear(GPIOC, GPIO0);
 
     recvBufLen[0] = 0;
     recvBufLen[1] = 0;
@@ -63,7 +65,6 @@ int main(void) {
                 }
                 if (strLen == 0) {
                     state = INTERPRETER_WAIT;
-                    gpio_clear(GPIOD, GPIO13);
                 } else {
                     if (usbmanager_send_packet(CDC_SENDING_EP, strBuf, strLen) != 0)
                         strLen = 0;

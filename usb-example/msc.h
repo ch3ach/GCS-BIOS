@@ -57,7 +57,11 @@
 #define SCSI_MEDIA_REMOVAL              0x1E
 #define SCSI_READ_FORMAT_CAPACITIES     0x23
 #define SCSI_READ_CAPACITY              0x25
+#define SCSI_READ6                      0x08
 #define SCSI_READ10                     0x28
+#define SCSI_READ12                     0xA8
+#define SCSI_READ16                     0x88
+#define SCSI_READ32                     0x7F
 #define SCSI_WRITE10                    0x2A
 #define SCSI_VERIFY10                   0x2F
 #define SCSI_MODE_SELECT10              0x55

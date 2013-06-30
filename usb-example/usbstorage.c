@@ -1,11 +1,11 @@
 #include <libopencm3/usb/usbd.h>
-#include <libopencm3/stm32/f4/gpio.h>
 #include "msc.h"
 #include "messagehistory.h"
 #include "usbstorage.h"
 #include "usbmanager.h"
 
 #include "ramdisk.h"
+#include "led.h"
 
 
 static const struct usb_endpoint_descriptor msc_endp[] = {
@@ -78,6 +78,7 @@ typedef enum {
     MSC_TRY_EXEC_CMD,
     MSC_RECV_DATA,
     MSC_SEND_DATA,
+    MSC_READ_DATA,
     MSC_SEND_OK,
     MSC_SEND_FAIL,
     MSC_SEND_PHASE_ERROR
@@ -128,7 +129,7 @@ medium.*/
 
 static bool RXPackage = false;
 static int32_t cmdLen = 0;
-static uint32_t cmdBuffer[64]; // <- 256 bytes but alligned...
+static uint32_t cmdBuffer[(8 * 256) / sizeof (uint32_t)];
 static msc_error_code_t errorCode = noError;
 static uint8_t errorDesc[2] = {0, 0};
 static uint8_t unitReady = 0;
@@ -235,26 +236,11 @@ static msc_status_t msc_testUnitReady(_msc_cbwheader_t* cmd) {
         errorDesc[1] = 0;
     } else {
         unitReady = 1;
-        errorCode = unitAttention;  //should be 0x06
+        errorCode = unitAttention; //should be 0x06
         errorDesc[0] = 0x28;
         errorDesc[1] = 0;
     }
 
-    return MSC_SEND_FAIL;
-}
-
-static msc_status_t msc_readCapacity(_msc_cbwheader_t* cmd, int32_t* cmdLen) {
-    uint32_t* values = (uint32_t*) cmd;
-    switch (cmd->LUN) {
-        case 0:
-            values[0] = ramdisk_getBlockCount();
-            values[1] = ramdisk_getBlockSize();
-            change_endian(&values[0], sizeof (uint32_t));
-            change_endian(&values[1], sizeof (uint32_t));
-            *cmdLen = 8;
-
-            return MSC_SEND_DATA;
-    }
     return MSC_SEND_FAIL;
 }
 
@@ -298,6 +284,42 @@ static inline msc_status_t msc_mediaRemoval(const uint8_t* cmd, const int8_t cmd
     return MSC_SEND_FAIL;
 }
 
+static msc_status_t msc_readCapacity(_msc_cbwheader_t* cmd, int32_t* cmdLen) {
+    uint32_t* values = (uint32_t*) cmd;
+    switch (cmd->LUN) {
+        case 0:
+            values[0] = ramdisk_getBlockCount();
+            values[1] = ramdisk_getBlockSize();
+            change_endian(&values[0], sizeof (uint32_t));
+            change_endian(&values[1], sizeof (uint32_t));
+            *cmdLen = 8;
+
+            return MSC_SEND_DATA;
+    }
+    return MSC_SEND_FAIL;
+}
+
+static uint32_t readAddr;
+static int32_t readCount;
+static uint8_t readLUN;
+
+static inline msc_status_t msc_read10(_msc_cbwheader_t* cmd, int32_t* cmdLen) {
+    uint8_t* data = cmd->CB;
+    readAddr = *((uint32_t*) & (data[2]));
+    readCount = *((uint16_t*) & (data[7]));
+    change_endian(&readAddr, sizeof (uint32_t));
+    change_endian(&readCount, sizeof (int32_t));
+    readLUN = cmd->LUN;
+    switch (readLUN) {
+        case 0:
+            *cmdLen = 0;
+            readAddr *= ramdisk_getBlockSize();
+            readCount *= ramdisk_getBlockSize();
+            return MSC_READ_DATA;
+    }
+    return MSC_SEND_FAIL;
+}
+
 static msc_status_t msc_tryExecuteSCSI(_msc_cbwheader_t* cmd, int32_t* cmdLen, int32_t cmdBufferSize) {
     (void) cmdBufferSize;
     if (*cmdLen < (int32_t)sizeof (_msc_cbwheader_t))
@@ -314,11 +336,11 @@ static msc_status_t msc_tryExecuteSCSI(_msc_cbwheader_t* cmd, int32_t* cmdLen, i
         case SCSI_MEDIA_REMOVAL: return msc_mediaRemoval(cmd->CB, cmd->CBLength);
         case SCSI_READ_FORMAT_CAPACITIES: break;
         case SCSI_READ_CAPACITY: return msc_readCapacity(cmd, cmdLen);
-        case SCSI_READ10: break;
+        case SCSI_READ10: return msc_read10(cmd, cmdLen);
         case SCSI_WRITE10: break;
         case SCSI_VERIFY10: break;
         case SCSI_MODE_SELECT10: break;
-        case SCSI_MODE_SENSE10: break; //return msc_SCSIsense10((uint32_t*) cmd, cmdLen);
+        case SCSI_MODE_SENSE10: break;
         default: break;
     }
 
@@ -337,7 +359,7 @@ void msc_data_rx_cb(usbd_device *usbd_dev, u8 ep) {
 
     uint8_t* buf = (uint8_t*) cmdBuffer;
 
-    gpio_toggle(GPIOD, GPIO15);
+    led_blue_toggle();
 
     buf = &buf[cmdLen];
     cmdLen += usbd_ep_read_packet(usbd_dev, ep, buf, MSC_ENDPOINT_PACKAGE_SIZE);
@@ -362,10 +384,12 @@ void msc_stateMachine(usbd_device *usbd_dev) {
         case MSC_TRY_EXEC_CMD:
         {
             _msc_cbwheader_t* head = (_msc_cbwheader_t*) cmdBuffer;
-            history_usbFrame(MSC_RECEIVING_EP, cmdBuffer, cmdLen);
             CSWTag = head->Tag;
             TransferLen = head->DataLength;
             state = msc_tryExecuteSCSI(head, &cmdLen, sizeof (cmdBuffer));
+
+            if (readCount == TransferLen)
+                led_green_on();
         }
             break;
         case MSC_RECV_DATA: state = MSC_SEND_OK;
@@ -375,11 +399,59 @@ void msc_stateMachine(usbd_device *usbd_dev) {
             uint8_t* buf = (uint8_t*) cmdBuffer;
             buf = &buf[cmdSent];
             if (cmdLen > cmdSent) {
-                history_usbFrame(MSC_SENDING_EP, buf, cmdLen - cmdSent);
                 cmdSent += usbmanager_send_packet(MSC_SENDING_EP, buf, cmdLen - cmdSent);
             } else {
                 state = MSC_SEND_OK;
             }
+        }
+            break;
+        case MSC_READ_DATA:
+        {
+            uint8_t* buf = (uint8_t*) cmdBuffer;
+            uint16_t len = readCount;
+            /*switch (readLUN) {
+                case 0:
+                    if (0 == readCount) {
+                        state = MSC_SEND_OK;
+                    } else if (0 == cmdLen) {
+                        cmdSent = 0;
+                        if (len > sizeof (cmdBuffer))
+                            len = sizeof (cmdBuffer);
+                        if (0 < len) {
+                            led_green_off();
+                            cmdLen = ramdisk_read(readAddr, buf, len);
+                            if (cmdLen == 0) {
+                                for (cmdLen = 0; cmdLen < (sizeof (cmdBuffer) / sizeof (uint32_t)); cmdLen++) {
+                                    cmdBuffer[cmdLen] = 0;
+                                }
+                                cmdLen = len;
+                            }
+                            readCount -= cmdLen;
+                            readAddr += cmdLen;
+                            led_red_on();
+                        }
+                    }
+                    break;
+                default:
+                    state = MSC_SEND_FAIL;
+                    break;
+            }/**/
+            //if (cmdLen > cmdSent) {
+            uint32_t count = 0x55aa0000;
+            cmdLen = 0;
+            cmdSent = 0;
+            if (cmdLen == 0) {
+                for (cmdLen = 0; cmdLen < (sizeof (cmdBuffer) / sizeof (uint32_t)); cmdLen++) {
+                    cmdBuffer[cmdLen] = count;
+                    count += 4;
+                }
+            }
+            cmdLen *= sizeof (uint32_t);
+            state = MSC_SEND_DATA;
+            /*} else {
+                cmdLen = 0;
+                cmdSent = 0;
+            }/**/
         }
             break;
         case MSC_SEND_OK:
@@ -403,9 +475,12 @@ void msc_stateMachine(usbd_device *usbd_dev) {
                 cmdLen = 0;
                 cmdSent = 0;
                 state = MSC_STANDBY;
-                gpio_clear(GPIOD, GPIO15);
             }
+            led_red_off();
         }
+            break;
+        default:
+            state = MSC_SEND_FAIL;
             break;
     }
 }

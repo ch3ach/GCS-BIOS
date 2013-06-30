@@ -23,3 +23,13 @@ uint32_t ramdisk_getBlockCount(void) {
     return (RAMDISK_SIZE / RAMDISK_BLOCKSIZE);
 }
 
+uint32_t ramdisk_read(uint32_t addr, uint8_t* buffer, uint32_t len) {
+    uint32_t n;
+
+    for (n = 0; n < len; n++) {
+        buffer[n] = ramdisk_data[n + addr];
+    }
+
+    return n;
+}
+

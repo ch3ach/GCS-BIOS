@@ -19,11 +19,11 @@
 
 #include <stdlib.h>
 #include <libopencm3/stm32/f4/rcc.h>
-#include <libopencm3/stm32/f4/gpio.h>
 #include <libopencm3/usb/cdc.h>
 #include <libopencm3/cm3/scb.h>
 #include "messagehistory.h"
 #include "cdcacm.h"
+#include "led.h"
 
 static const struct usb_endpoint_descriptor data_endp[] = {
     {
@@ -165,5 +165,5 @@ void cdcacm_data_rx_cb(usbd_device *usbd_dev, u8 ep) {
     }
     writeOffset += n - n_old;
 
-    gpio_toggle(GPIOD, GPIO12);
+    led_orange_toggle();
 }

@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <libopencm3/stm32/f4/rcc.h>
-#include <libopencm3/stm32/f4/gpio.h>
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
 #include <libopencm3/cm3/scb.h>
@@ -9,6 +8,7 @@
 #include "usbstorage.h"
 #include "cdcacm.h"
 #include "msc.h"
+#include "led.h"
 
 
 static const struct usb_device_descriptor dev = {
@@ -64,17 +64,13 @@ static const char *usb_strings[] = {
 
 static usbd_device *usbd_dev;
 static uint32_t controlBuffer[(128 / sizeof (uint32_t))];
+static uint16_t tx_ep_sizes[5];
 
 static int usbmanager_control_request(usbd_device *usbd_dev, struct usb_setup_data *req, u8 **buf,
         u16 *len, void (**complete)(usbd_device *usbd_dev, struct usb_setup_data *req)) {
     (void) complete;
     (void) buf;
     (void) usbd_dev;
-
-    gpio_set(GPIOD, GPIO13);
-    gpio_toggle(GPIOD, GPIO14);
-
-    history_usbControl(req, sizeof (struct usb_setup_data), *buf, *len);
 
     switch (req->bRequest) {
         case USB_CDC_REQ_SET_CONTROL_LINE_STATE:
@@ -124,6 +120,11 @@ static void usbmanager_set_config(usbd_device *usbd_dev, u16 wValue) {
     usbd_ep_setup(usbd_dev, MSC_RECEIVING_EP, USB_ENDPOINT_ATTR_BULK, MSC_ENDPOINT_PACKAGE_SIZE, usbmanager_data_rx);
     usbd_ep_setup(usbd_dev, MSC_SENDING_EP, USB_ENDPOINT_ATTR_BULK, MSC_ENDPOINT_PACKAGE_SIZE, NULL);
 
+    tx_ep_sizes[0] = USBMANAGER_FIFO0_SIZE;
+    tx_ep_sizes[CDC_SENDING_EP & 0x7F] = CDC_ENDPOINT_PACKAGE_SIZE;
+    tx_ep_sizes[CDC_INTERRUPT_EP & 0x7F] = 16;
+    tx_ep_sizes[MSC_SENDING_EP & 0x7F] = MSC_ENDPOINT_PACKAGE_SIZE;
+
     usbd_register_control_callback(
             usbd_dev,
             USB_REQ_TYPE_CLASS | USB_REQ_TYPE_INTERFACE,
@@ -142,5 +143,8 @@ void usbmanager_poll(void) {
 }
 
 u16 usbmanager_send_packet(u8 addr, const void *buf, u16 len) {
+    if (tx_ep_sizes[addr & 0x7F] < len) {
+        len = tx_ep_sizes[addr & 0x7F];
+    }
     return usbd_ep_write_packet(usbd_dev, addr, buf, len);
 }

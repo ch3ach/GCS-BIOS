@@ -19,6 +19,8 @@ extern "C" {
     uint32_t ramdisk_getSize(void);
     uint32_t ramdisk_getBlockSize(void);
     uint32_t ramdisk_getBlockCount(void);
+    
+    uint32_t ramdisk_read(uint32_t addr, uint8_t* buffer, uint32_t len);
 
 #ifdef	__cplusplus
 }

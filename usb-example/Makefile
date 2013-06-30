@@ -48,6 +48,7 @@ all: images
 
 images: $(BINARY).images
 flash: $(BINARY).stlink-flash
+debug: $(BINARY).stlink-debug
 
 %.images: %.bin %.hex %.srec %.list
 	@echo "*** $* images generated ***"
@@ -88,5 +89,9 @@ clean:
 %.stlink-flash: %.bin
 	@printf "  FLASH   $<\n"
 	$(Q)$(SUDO) $(FLASH) write $(*).bin 0x8000000
+	
+%.stlink-debug: %.elf
+	@printf "  DEBUG   $<\n"
+	$(Q)$(SUDO) $(UTIL) $(*).elf
 	
 	
