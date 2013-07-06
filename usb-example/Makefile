@@ -50,7 +50,7 @@ images: $(BINARY).images
 flash: $(BINARY).stlink-flash
 debug: $(BINARY).stlink-debug
 
-%.images: %.bin %.hex %.srec %.list
+%.images: %.bin %.hex %.srec %.symb %.list
 	@echo "*** $* images generated ***"
 
 %.bin: %.elf
@@ -64,6 +64,10 @@ debug: $(BINARY).stlink-debug
 %.srec: %.elf
 	@printf "  OBJCOPY $(*).srec\n"
 	$(Q)$(OBJCOPY) -Osrec $(*).elf $(*).srec
+
+%.symb: %.elf
+	@printf "  OBJDUMP $(*).symb\n"
+	$(Q)$(OBJDUMP) -t $(*).elf > $(*).symb
 
 %.list: %.elf
 	@printf "  OBJDUMP $(*).list\n"

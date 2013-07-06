@@ -407,9 +407,9 @@ void msc_stateMachine(usbd_device *usbd_dev) {
             break;
         case MSC_READ_DATA:
         {
-            uint8_t* buf = (uint8_t*) cmdBuffer;
+            /*uint8_t* buf = (uint8_t*) cmdBuffer;
             uint16_t len = readCount;
-            /*switch (readLUN) {
+            switch (readLUN) {
                 case 0:
                     if (0 == readCount) {
                         state = MSC_SEND_OK;
@@ -437,7 +437,10 @@ void msc_stateMachine(usbd_device *usbd_dev) {
                     break;
             }/**/
             //if (cmdLen > cmdSent) {
-            uint32_t count = 0x55aa0000;
+            /*uint32_t count = 0x55aa0000;
+            
+            
+            
             cmdLen = 0;
             cmdSent = 0;
             if (cmdLen == 0) {
@@ -446,7 +449,10 @@ void msc_stateMachine(usbd_device *usbd_dev) {
                     count += 4;
                 }
             }
-            cmdLen *= sizeof (uint32_t);
+            cmdLen *= sizeof (uint32_t);/*/
+            
+            cmdLen = ramdisk_read(readAddr, cmdBuffer, sizeof (cmdBuffer));/**/ //readCount
+            cmdSent = 0;
             state = MSC_SEND_DATA;
             /*} else {
                 cmdLen = 0;
