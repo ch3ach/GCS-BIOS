@@ -104,3 +104,5 @@ SECTIONS
 
 PROVIDE(_stack = ORIGIN(ram) + LENGTH(ram));
 
+PROVIDE(_ramdisk = ORIGIN(ramdisk) + LENGTH(ramdisk));
+

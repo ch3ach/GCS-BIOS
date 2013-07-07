@@ -3,7 +3,7 @@
 #define RAMDISK_SIZE            (128*1024)
 #define RAMDISK_BLOCKSIZE       256 //256 is the minimum; it will not work if this value is any smaller
 
-static uint32_t* ramdisk_data = (uint32_t*) 0x20000000;
+static uint32_t ramdisk_data[RAMDISK_SIZE / sizeof(uint32_t)];
 
 void ramdisk_init(void) { }
 
