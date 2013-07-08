@@ -265,7 +265,6 @@ static inline msc_status_t msc_SCSIsense(uint32_t* buf, int32_t* len) {
     uint32_t* stdData = (uint32_t*) stdSenseData;
     *len = sizeof (stdSenseData);
     for (n = 0; n < ((sizeof (stdSenseData) + 3) >> 2)/* 8 / 4 */; n++) {
-
         buf[n] = stdData[n];
     }
 
@@ -300,21 +299,21 @@ static msc_status_t msc_readCapacity(_msc_cbwheader_t* cmd, int32_t* cmdLen) {
 }
 
 static uint32_t readAddr;
-static int32_t readCount;
+static uint32_t readCount;
 static uint8_t readLUN;
 
 static inline msc_status_t msc_read10(_msc_cbwheader_t* cmd, int32_t* cmdLen) {
     uint8_t* data = cmd->CB;
+    uint16_t readBlocks = *((uint16_t*) & (data[7]));
     readAddr = *((uint32_t*) & (data[2]));
-    readCount = *((uint16_t*) & (data[7]));
     change_endian(&readAddr, sizeof (uint32_t));
-    change_endian(&readCount, sizeof (int32_t));
+    change_endian(&readBlocks, sizeof (uint16_t));
     readLUN = cmd->LUN;
     switch (readLUN) {
         case 0:
             *cmdLen = 0;
             readAddr *= ramdisk_getBlockSize();
-            readCount *= ramdisk_getBlockSize();
+            readCount = readBlocks * ramdisk_getBlockSize();
             return MSC_READ_DATA;
     }
     return MSC_SEND_FAIL;
@@ -387,9 +386,6 @@ void msc_stateMachine(usbd_device *usbd_dev) {
             CSWTag = head->Tag;
             TransferLen = head->DataLength;
             state = msc_tryExecuteSCSI(head, &cmdLen, sizeof (cmdBuffer));
-
-            if (readCount == TransferLen)
-                led_green_on();
         }
             break;
         case MSC_RECV_DATA: state = MSC_SEND_OK;
@@ -407,57 +403,13 @@ void msc_stateMachine(usbd_device *usbd_dev) {
             break;
         case MSC_READ_DATA:
         {
-            /*uint8_t* buf = (uint8_t*) cmdBuffer;
-            uint16_t len = readCount;
-            switch (readLUN) {
-                case 0:
-                    if (0 == readCount) {
-                        state = MSC_SEND_OK;
-                    } else if (0 == cmdLen) {
-                        cmdSent = 0;
-                        if (len > sizeof (cmdBuffer))
-                            len = sizeof (cmdBuffer);
-                        if (0 < len) {
-                            led_green_off();
-                            cmdLen = ramdisk_read(readAddr, buf, len);
-                            if (cmdLen == 0) {
-                                for (cmdLen = 0; cmdLen < (sizeof (cmdBuffer) / sizeof (uint32_t)); cmdLen++) {
-                                    cmdBuffer[cmdLen] = 0;
-                                }
-                                cmdLen = len;
-                            }
-                            readCount -= cmdLen;
-                            readAddr += cmdLen;
-                            led_red_on();
-                        }
-                    }
-                    break;
-                default:
-                    state = MSC_SEND_FAIL;
-                    break;
-            }/**/
-            //if (cmdLen > cmdSent) {
-            /*uint32_t count = 0x55aa0000;
-            
-            
-            
-            cmdLen = 0;
-            cmdSent = 0;
-            if (cmdLen == 0) {
-                for (cmdLen = 0; cmdLen < (sizeof (cmdBuffer) / sizeof (uint32_t)); cmdLen++) {
-                    cmdBuffer[cmdLen] = count;
-                    count += 4;
-                }
+            uint32_t len = readCount;
+            if (len > sizeof (cmdBuffer)) {
+                len = sizeof (cmdBuffer);
             }
-            cmdLen *= sizeof (uint32_t);/*/
-            
-            cmdLen = ramdisk_read(readAddr, cmdBuffer, sizeof (cmdBuffer));/**/ //readCount
+            cmdLen = ramdisk_read(readAddr, cmdBuffer, len);
             cmdSent = 0;
             state = MSC_SEND_DATA;
-            /*} else {
-                cmdLen = 0;
-                cmdSent = 0;
-            }/**/
         }
             break;
         case MSC_SEND_OK:
@@ -482,7 +434,6 @@ void msc_stateMachine(usbd_device *usbd_dev) {
                 cmdSent = 0;
                 state = MSC_STANDBY;
             }
-            led_red_off();
         }
             break;
         default:
