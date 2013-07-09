@@ -129,7 +129,7 @@ medium.*/
 
 static bool RXPackage = false;
 static int32_t cmdLen = 0;
-static uint32_t cmdBuffer[(8 * 256) / sizeof (uint32_t)];
+static uint32_t cmdBuffer[(128) / sizeof (uint32_t)];
 static msc_error_code_t errorCode = noError;
 static uint8_t errorDesc[2] = {0, 0};
 static uint8_t unitReady = 0;
@@ -403,13 +403,22 @@ void msc_stateMachine(usbd_device *usbd_dev) {
             break;
         case MSC_READ_DATA:
         {
-            uint32_t len = readCount;
-            if (len > sizeof (cmdBuffer)) {
-                len = sizeof (cmdBuffer);
+            uint8_t* buf = (uint8_t*) cmdBuffer;
+
+            if ((uint32_t)cmdSent == readCount) {
+                state = MSC_SEND_OK;
+            } else {
+                if (cmdLen > cmdSent) {
+                    cmdSent += usbmanager_send_packet(MSC_SENDING_EP, buf, cmdLen - cmdSent);
+                }
+                if (cmdLen == cmdSent) {
+                    uint32_t len = readCount - cmdSent;
+                    if (len > MSC_ENDPOINT_PACKAGE_SIZE)
+                        len = MSC_ENDPOINT_PACKAGE_SIZE;
+                    cmdLen += ramdisk_read(readAddr, cmdBuffer, len);
+                    readAddr += len;
+                }
             }
-            cmdLen = ramdisk_read(readAddr, cmdBuffer, len);
-            cmdSent = 0;
-            state = MSC_SEND_DATA;
         }
             break;
         case MSC_SEND_OK:
