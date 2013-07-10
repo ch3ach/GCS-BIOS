@@ -74,11 +74,11 @@ typedef struct {
 
 typedef enum {
     MSC_STANDBY = 0,
-    //MSC_RECV_CMD,
     MSC_TRY_EXEC_CMD,
     MSC_RECV_DATA,
     MSC_SEND_DATA,
     MSC_READ_DATA,
+    MSC_WRITE_DATA,
     MSC_SEND_OK,
     MSC_SEND_FAIL,
     MSC_SEND_PHASE_ERROR
@@ -129,7 +129,7 @@ medium.*/
 
 static bool RXPackage = false;
 static int32_t cmdLen = 0;
-static uint32_t cmdBuffer[(128) / sizeof (uint32_t)];
+static uint32_t cmdBuffer[128 / sizeof (uint32_t)];
 static msc_error_code_t errorCode = noError;
 static uint8_t errorDesc[2] = {0, 0};
 static uint8_t unitReady = 0;
@@ -319,6 +319,27 @@ static inline msc_status_t msc_read10(_msc_cbwheader_t* cmd, int32_t* cmdLen) {
     return MSC_SEND_FAIL;
 }
 
+static uint32_t writeAddr;
+static uint32_t writeCount;
+static uint8_t writeLUN;
+
+static inline msc_status_t msc_write10(_msc_cbwheader_t* cmd, int32_t* cmdLen) {
+    uint8_t* data = cmd->CB;
+    uint16_t writeBlocks = *((uint16_t*) & (data[7]));
+    writeAddr = *((uint32_t*) & (data[2]));
+    change_endian(&writeAddr, sizeof (uint32_t));
+    change_endian(&writeBlocks, sizeof (uint16_t));
+    writeLUN = cmd->LUN;
+    switch (writeLUN) {
+        case 0:
+            *cmdLen = 0;
+            writeAddr *= ramdisk_getBlockSize();
+            writeCount = writeBlocks * ramdisk_getBlockSize();
+            return MSC_WRITE_DATA;
+    }
+    return MSC_SEND_FAIL;
+}
+
 static msc_status_t msc_tryExecuteSCSI(_msc_cbwheader_t* cmd, int32_t* cmdLen, int32_t cmdBufferSize) {
     (void) cmdBufferSize;
     if (*cmdLen < (int32_t)sizeof (_msc_cbwheader_t))
@@ -336,7 +357,7 @@ static msc_status_t msc_tryExecuteSCSI(_msc_cbwheader_t* cmd, int32_t* cmdLen, i
         case SCSI_READ_FORMAT_CAPACITIES: break;
         case SCSI_READ_CAPACITY: return msc_readCapacity(cmd, cmdLen);
         case SCSI_READ10: return msc_read10(cmd, cmdLen);
-        case SCSI_WRITE10: break;
+        case SCSI_WRITE10: break;//return msc_write10(cmd, cmdLen);
         case SCSI_VERIFY10: break;
         case SCSI_MODE_SELECT10: break;
         case SCSI_MODE_SENSE10: break;
@@ -405,7 +426,7 @@ void msc_stateMachine(usbd_device *usbd_dev) {
         {
             uint8_t* buf = (uint8_t*) cmdBuffer;
 
-            if ((uint32_t)cmdSent == readCount) {
+            if ((uint32_t) cmdSent == readCount) {
                 state = MSC_SEND_OK;
             } else {
                 if (cmdLen > cmdSent) {
@@ -419,6 +440,19 @@ void msc_stateMachine(usbd_device *usbd_dev) {
                     readAddr += len;
                 }
             }
+        }
+            break;
+        case MSC_WRITE_DATA:
+        {
+            if (RXPackage){
+                RXPackage = false;
+                
+            }
+            
+            errorCode = illegalRequest;
+            errorDesc[0] = 0x20;
+            errorDesc[1] = 0;
+            state = MSC_SEND_FAIL;
         }
             break;
         case MSC_SEND_OK:
@@ -446,6 +480,9 @@ void msc_stateMachine(usbd_device *usbd_dev) {
         }
             break;
         default:
+            errorCode = illegalRequest;
+            errorDesc[0] = 0x20;
+            errorDesc[1] = 0;
             state = MSC_SEND_FAIL;
             break;
     }
