@@ -357,7 +357,7 @@ static msc_status_t msc_tryExecuteSCSI(_msc_cbwheader_t* cmd, int32_t* cmdLen, i
         case SCSI_READ_FORMAT_CAPACITIES: break;
         case SCSI_READ_CAPACITY: return msc_readCapacity(cmd, cmdLen);
         case SCSI_READ10: return msc_read10(cmd, cmdLen);
-        case SCSI_WRITE10: break;//return msc_write10(cmd, cmdLen);
+        case SCSI_WRITE10: return msc_write10(cmd, cmdLen);
         case SCSI_VERIFY10: break;
         case SCSI_MODE_SELECT10: break;
         case SCSI_MODE_SENSE10: break;
@@ -436,7 +436,8 @@ void msc_stateMachine(usbd_device *usbd_dev) {
                     uint32_t len = readCount - cmdSent;
                     if (len > MSC_ENDPOINT_PACKAGE_SIZE)
                         len = MSC_ENDPOINT_PACKAGE_SIZE;
-                    cmdLen += ramdisk_read(readAddr, cmdBuffer, len);
+                    len = ramdisk_read(readAddr, cmdBuffer, len);
+                    cmdLen += len;
                     readAddr += len;
                 }
             }
@@ -444,15 +445,17 @@ void msc_stateMachine(usbd_device *usbd_dev) {
             break;
         case MSC_WRITE_DATA:
         {
-            if (RXPackage){
+            if (RXPackage) {
+                uint32_t len;
                 RXPackage = false;
-                
+
+                len = ramdisk_write(writeAddr, cmdBuffer, cmdLen);
+                cmdSent += len;
+                writeAddr += len;
+                if (cmdSent == writeCount) {
+                    state = MSC_SEND_OK;
+                }
             }
-            
-            errorCode = illegalRequest;
-            errorDesc[0] = 0x20;
-            errorDesc[1] = 0;
-            state = MSC_SEND_FAIL;
         }
             break;
         case MSC_SEND_OK:

@@ -1,7 +1,7 @@
 #include "ramdisk.h"
 
 #define RAMDISK_SIZE            (128*1024)
-#define RAMDISK_BLOCKSIZE       256 //256 is the minimum; it will not work if this value is any smaller
+#define RAMDISK_BLOCKSIZE       512 //256 is the minimum; it will not work if this value is any smaller
 
 static uint8_t* ramdisk_data = ((uint8_t*) 0x20000000);
 
