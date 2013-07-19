@@ -20,8 +20,8 @@ extern "C" {
     uint32_t ramdisk_getBlockSize(void);
     uint32_t ramdisk_getBlockCount(void);
     
-    uint32_t ramdisk_read(uint32_t addr, void* buffer, uint32_t len);
-    uint32_t ramdisk_write(uint32_t addr, void* buffer, uint32_t len);
+    uint32_t ramdisk_read(uint32_t addr, const void* buffer, uint32_t len);
+    uint32_t ramdisk_write(uint32_t addr, const void* buffer, uint32_t len);
 
 #ifdef	__cplusplus
 }

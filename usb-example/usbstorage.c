@@ -447,12 +447,13 @@ void msc_stateMachine(usbd_device *usbd_dev) {
         {
             if (RXPackage) {
                 uint32_t len;
-                RXPackage = false;
 
                 len = ramdisk_write(writeAddr, cmdBuffer, cmdLen);
+                cmdLen = 0;
+                RXPackage = false;
                 cmdSent += len;
                 writeAddr += len;
-                if (cmdSent == writeCount) {
+                if ((uint32_t)cmdSent == writeCount) {
                     state = MSC_SEND_OK;
                 }
             }

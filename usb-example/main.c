@@ -7,6 +7,7 @@
 #include "cdcacm.h"
 #include "usbmanager.h"
 #include "led.h"
+#include "ramdisk.h"
 
 typedef enum {
     INTERPRETER_WAIT,
@@ -19,6 +20,7 @@ int main(void) {
     interpreter_state_t state = INTERPRETER_WAIT;
     char strBuf[64];
     uint16_t strLen = 0;
+    uint32_t n;
 
     rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_168MHZ]);
 
@@ -45,6 +47,11 @@ int main(void) {
     history_init((uint8_t*) histbuffer, sizeof (histbuffer));
 
     usbmanager_init();
+
+    for (n = 0; n < ramdisk_getSize(); n += 16) {
+        ramdisk_write(n, "0123456789abcde\n", 16);
+    }
+    ramdisk_write(ramdisk_getSize() - 16, "<- END\n 128 kB\n", 16);
 
     while (1) {
         usbmanager_poll();
