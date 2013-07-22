@@ -10,7 +10,7 @@
 
 #define MSC_ENDPOINT_PACKAGE_SIZE       64
 
-#define MSC_RECEIVING_EP                0x01
+#define MSC_RECEIVING_EP                0x03
 #define MSC_SENDING_EP                  (MSC_RECEIVING_EP+0x80)
 
 #define MSC_IMPLEMENTED_LUNS            1
