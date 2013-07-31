@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <libopencm3/stm32/f4/rcc.h>
 #include <libopencm3/stm32/f4/gpio.h>
-#include "messagehistory.h"
+#include "SCSIUnknowns.h"
 #include "cdcacm.h"
 #include "usbmanager.h"
 #include "led.h"
@@ -14,7 +14,7 @@ typedef enum {
     INTERPRETER_SENDHIST
 } interpreter_state_t;
 
-uint32_t histbuffer[512];
+uint32_t SCSIUnknownsBuffer[512];
 
 int main(void) {
     interpreter_state_t state = INTERPRETER_WAIT;
@@ -34,17 +34,11 @@ int main(void) {
     gpio_set_af(GPIOA, GPIO_AF10, GPIO9 | GPIO11 | GPIO12);
 
     led_init();
-    //gpio_mode_setup(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
-    //        GPIO12 | GPIO13 | GPIO14 | GPIO15);
-    //gpio_clear(GPIOD, GPIO12 | GPIO13 | GPIO14 | GPIO15);
-
-    //gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO0);
-    //gpio_clear(GPIOC, GPIO0);
 
     recvBufLen[0] = 0;
     recvBufLen[1] = 0;
 
-    history_init((uint8_t*) histbuffer, sizeof (histbuffer));
+    SCSIUnknowns_init(SCSIUnknownsBuffer, sizeof (SCSIUnknownsBuffer));
 
     usbmanager_init();
 
@@ -60,6 +54,7 @@ int main(void) {
                 if (recvBufLen[readBuffer] != 0) {
                     if (memcmp(recvBuf[readBuffer], "get", 3) == 0) {
                         state = INTERPRETER_SENDHIST;
+                        SCSIUnknowns_restartASCII();
                     } else {
                         usbmanager_send_packet(CDC_SENDING_EP, "STM32: unknown command\n", 23);
                     }
@@ -68,10 +63,11 @@ int main(void) {
                 break;
             case INTERPRETER_SENDHIST:
                 if (strLen == 0) {
-                    strLen = history_getASCIIPackage(strBuf, sizeof (strBuf));
+                    strLen = SCSIUnknowns_nextASCII(strBuf, sizeof (strBuf));
                 }
                 if (strLen == 0) {
                     state = INTERPRETER_WAIT;
+                    SCSIUnknowns_disposeData();
                 } else {
                     if (usbmanager_send_packet(CDC_SENDING_EP, strBuf, strLen) != 0)
                         strLen = 0;

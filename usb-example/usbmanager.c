@@ -3,7 +3,7 @@
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
 #include <libopencm3/cm3/scb.h>
-#include "messagehistory.h"
+#include "SCSIUnknowns.h"
 #include "usbmanager.h"
 #include "usbstorage.h"
 #include "cdcacm.h"
@@ -100,6 +100,7 @@ static int usbmanager_control_request(usbd_device *usbd_dev, struct usb_setup_da
     return USBD_REQ_NOTSUPP;
 }
 
+/*
 static void usbmanager_data_rx(usbd_device *usbd_dev, u8 ep) {
     switch (ep) {
         case CDC_RECEIVING_EP: cdcacm_data_rx_cb(usbd_dev, ep);
@@ -108,16 +109,15 @@ static void usbmanager_data_rx(usbd_device *usbd_dev, u8 ep) {
             break;
     }
 }
+*/
 
 static void usbmanager_set_config(usbd_device *usbd_dev, u16 wValue) {
     (void) wValue;
 
-    history_usbStart();
-
-    usbd_ep_setup(usbd_dev, CDC_RECEIVING_EP, USB_ENDPOINT_ATTR_BULK, CDC_ENDPOINT_PACKAGE_SIZE, usbmanager_data_rx);
+    usbd_ep_setup(usbd_dev, CDC_RECEIVING_EP, USB_ENDPOINT_ATTR_BULK, CDC_ENDPOINT_PACKAGE_SIZE, cdcacm_data_rx_cb);
     usbd_ep_setup(usbd_dev, CDC_SENDING_EP, USB_ENDPOINT_ATTR_BULK, CDC_ENDPOINT_PACKAGE_SIZE, NULL);
     usbd_ep_setup(usbd_dev, CDC_INTERRUPT_EP, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
-    usbd_ep_setup(usbd_dev, MSC_RECEIVING_EP, USB_ENDPOINT_ATTR_BULK, MSC_ENDPOINT_PACKAGE_SIZE, usbmanager_data_rx);
+    usbd_ep_setup(usbd_dev, MSC_RECEIVING_EP, USB_ENDPOINT_ATTR_BULK, MSC_ENDPOINT_PACKAGE_SIZE, msc_data_rx_cb);
     usbd_ep_setup(usbd_dev, MSC_SENDING_EP, USB_ENDPOINT_ATTR_BULK, MSC_ENDPOINT_PACKAGE_SIZE, NULL);
 
     tx_ep_sizes[0] = USBMANAGER_FIFO0_SIZE;

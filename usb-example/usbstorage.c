@@ -1,6 +1,6 @@
 #include <libopencm3/usb/usbd.h>
 #include "msc.h"
-#include "messagehistory.h"
+#include "SCSIUnknowns.h"
 #include "usbstorage.h"
 #include "usbmanager.h"
 
@@ -363,6 +363,8 @@ static msc_status_t msc_tryExecuteSCSI(_msc_cbwheader_t* cmd, int32_t* cmdLen, i
         case SCSI_MODE_SENSE10: break;
         default: break;
     }
+    
+    SCSIUnknowns_logPackage(cmd->CB[0], cmd->LUN, cmd->CBLength, cmd->CB);
 
     errorCode = illegalRequest;
     errorDesc[0] = 0x20;
