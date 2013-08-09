@@ -26,7 +26,7 @@ CFLAGS		+= -Os -g -Wall -Wextra -I$(LIBOPENCM3_DIR)/include \
 		   -fno-common -mcpu=cortex-m4 -mthumb \
 		   -mfloat-abi=hard -mfpu=fpv4-sp-d16 -MD -DSTM32F4
 LDSCRIPT	?= $(BINARY).ld
-LDFLAGS		+= --static -lc -lnosys -L$(LIBOPENCM3_DIR)/lib \
+LDFLAGS		+= --static -lc -lnosys -L$(LIBOPENCM3_DIR)/lib -lopencm3_stm32f4 \
 			 -L$(LIBOPENCM3_DIR)/lib/stm32/f4 \
 		   -T$(LDSCRIPT) -nostartfiles -Wl,--gc-sections \
 		   -mthumb -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -73,9 +73,9 @@ debug: $(BINARY).stlink-debug
 	@printf "  OBJDUMP $(*).list\n"
 	$(Q)$(OBJDUMP) -S $(*).elf > $(*).list
 
-%.elf: $(OBJS) $(LDSCRIPT) $(TOOLCHAIN_DIR)/lib/libopencm3_stm32f4.a
+%.elf: $(OBJS) $(LDSCRIPT) $(LIBOPENCM3_DIR)/lib/libopencm3_stm32f4.a
 	@printf "  LD      $(subst $(shell pwd)/,,$(@))\n"
-	$(Q)$(LD) -o $(*).elf $(OBJS) -lopencm3_stm32f4 $(LDFLAGS)
+	$(Q)$(LD) -o $(*).elf $(OBJS) $(LDFLAGS)
 
 %.o: %.c
 	@printf "  CC      $(subst $(shell pwd)/,,$(@))\n"
