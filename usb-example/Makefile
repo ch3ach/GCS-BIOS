@@ -27,7 +27,6 @@ CFLAGS		+= -Os -g -Wall -Wextra -I$(LIBOPENCM3_DIR)/include \
 		   -mfloat-abi=hard -mfpu=fpv4-sp-d16 -MD -DSTM32F4
 LDSCRIPT	?= $(BINARY).ld
 LDFLAGS		+= --static -lc -lnosys -L$(LIBOPENCM3_DIR)/lib -lopencm3_stm32f4 \
-			 -L$(LIBOPENCM3_DIR)/lib/stm32/f4 \
 		   -T$(LDSCRIPT) -nostartfiles -Wl,--gc-sections \
 		   -mthumb -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
 OBJS		+= cdcacm.o SCSIUnknowns.o usbmanager.o usbstorage.o ramdisk.o main.o

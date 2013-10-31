@@ -17,7 +17,7 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
+#include <stdint.h>
 #include <libopencm3/stm32/f4/rcc.h>
 #include <libopencm3/usb/cdc.h>
 #include <libopencm3/cm3/scb.h>
